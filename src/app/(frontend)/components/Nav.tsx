@@ -15,18 +15,21 @@ export default function Nav() {
 
   return (
     <header className="glass sticky top-0 z-40 border-b border-rose/10">
-      <div className="flex items-center justify-between px-4 py-3 sm:px-8">
-        <Link href="/" className="font-script text-2xl text-berry">
+      <div className="flex flex-nowrap items-center justify-between gap-2 px-3 py-2.5 sm:gap-4 sm:px-8 sm:py-3">
+        <Link
+          href="/"
+          className="whitespace-nowrap font-script text-lg leading-none text-berry sm:text-2xl"
+        >
           💌 {nav.brand}
         </Link>
-        <nav className="flex items-center gap-1 sm:gap-2">
+        <nav className="flex flex-shrink-0 items-center gap-0.5 sm:gap-2">
           {links.map((link) => {
             const active = pathname === link.href
             return (
               <Link
                 key={link.href}
                 href={link.href}
-                className={`tap-shrink rounded-full px-3 py-1.5 text-sm font-medium transition-colors sm:px-4 sm:text-base ${
+                className={`tap-shrink whitespace-nowrap rounded-full px-2 py-1 text-xs font-medium transition-colors sm:px-4 sm:py-1.5 sm:text-base ${
                   active ? 'bg-rose text-white shadow-sm' : 'text-berry/80 hover:bg-rose/10'
                 }`}
               >
