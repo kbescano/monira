@@ -369,7 +369,6 @@ export default function UploadVideo({ currentUser }: { currentUser: Person | nul
               {mode === 'preview' && previewUrl && (
                 <form onSubmit={handleSubmit} className="flex flex-col gap-4 px-5 py-5">
                   <div className="mx-auto w-full max-w-xs overflow-hidden rounded-2xl bg-black">
-                    {/* eslint-disable-next-line jsx-a11y/media-has-caption */}
                     <video
                       src={previewUrl}
                       controls

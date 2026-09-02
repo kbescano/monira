@@ -140,7 +140,6 @@ export default function WatchVideoClient({
           </p>
         )}
 
-        {/* eslint-disable-next-line jsx-a11y/media-has-caption */}
         <video
           ref={videoRef}
           src={url}
@@ -173,7 +172,6 @@ export default function WatchVideoClient({
     <div className="flex min-h-screen flex-col items-center justify-center gap-4 bg-gradient-to-b from-blush via-cream to-cream px-6 text-center">
       <span className="text-4xl">🎬</span>
       <h1 className="font-serif text-xl text-berry">{heading}</h1>
-      <p className="max-w-sm text-sm text-plum/60">This plays once, then it&apos;s gone. Ready?</p>
       <button
         onClick={reveal}
         disabled={state === 'checking'}

@@ -25,7 +25,7 @@ export default function ReasonGenerator({ reasons }: { reasons: string[] }) {
 
   const showNext = () => {
     if (bagRef.current.length === 0) {
-      let bag = shuffled(reasons.length)
+      const bag = shuffled(reasons.length)
       // Don't let the new bag's first draw match what's on screen right now —
       // that would read as a repeat across the cycle boundary.
       if (reasons.length > 1 && bag[0] === index) {
