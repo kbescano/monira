@@ -16,32 +16,9 @@ export const hero = {
     "I could've just chat you this, but I made you a whole app instead. That's how you know it's serious.",
 }
 
-/** Shuffles through when the "why I love you" button is tapped. Mix serious and silly on purpose. */
-export const reasons: string[] = [
-  'You laugh at my jokes even when they are objectively not funny.',
-  'You make the most mediocre days feel like a whole event.',
-  'Because you have a lovely feeet!, buti na lang talaga',
-  'You steal the blanket and somehow I still want to cuddle.',
-  'Tipid sa away kasi lagi kang tulog haha',
-  "Kasi simple or little things lang yung happiness mo, WEEEHHH?",
-  'Always create memories with me, even if it’s just a simple walk sa Southwoods or Vermosa',
-  "Honestly? You're just really, really good at being you.",
-  "Pag may peace of mind ako, ilalabas mo na si Monira",
-  "How you care about me, kahit nagkakamali ako.",
-  "Always make me feel like a King when you feed me while driving.",
-  'You once let me win an argument and never brought it up again. A legend. A dream come true',
-  "Kasi may once a month redeem? hahahaha",
-  "Sobrang generous mo sa akin and the people around you.",
-  "Even your sungit moments are adorable",
-  "Nililinis mo yung room ko",
-  "Yung patience mo sa akin parang unlimited data—minsan bumabagal, pero never na-eexpire.",
-  "Ang dami mo binibigay sakin",
-  "Kasi ikaw yung paborito kong ka-chismisan hahaha",
-  "Because simply holding your hand makes the heaviest days feel a lot lighter.",
-  "You are the absolute best passenger princess, kahit pinipilit mo huwag matulog",
-  "Because you are the best mom, sister or daughter that could possibly be. As partner? Even better.",
-  "You always know how to make me laugh — I love how we laugh together, even in the holiest of places."
-]
+// "Why I love you" reasons moved to the database — see the Reasons collection
+// (src/collections/Reasons.ts). Edit/add/remove them from /admin now instead
+// of here, so they no longer require a redeploy.
 
 /** Shown after the runaway button finally gets caught. */
 export const caughtMessages = [

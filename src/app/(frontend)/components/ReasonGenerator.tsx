@@ -2,11 +2,12 @@
 
 import { useState } from 'react'
 import { motion, AnimatePresence } from 'motion/react'
-import { reasons } from '../content'
 
-export default function ReasonGenerator() {
+export default function ReasonGenerator({ reasons }: { reasons: string[] }) {
   const [index, setIndex] = useState<number | null>(null)
   const [count, setCount] = useState(0)
+
+  if (reasons.length === 0) return null
 
   const showNext = () => {
     let next = Math.floor(Math.random() * reasons.length)

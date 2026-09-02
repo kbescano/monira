@@ -71,6 +71,7 @@ export interface Config {
     media: Media;
     memories: Memory;
     'love-letters': LoveLetter;
+    reasons: Reason;
     'payload-kv': PayloadKv;
     'payload-locked-documents': PayloadLockedDocument;
     'payload-preferences': PayloadPreference;
@@ -82,6 +83,7 @@ export interface Config {
     media: MediaSelect<false> | MediaSelect<true>;
     memories: MemoriesSelect<false> | MemoriesSelect<true>;
     'love-letters': LoveLettersSelect<false> | LoveLettersSelect<true>;
+    reasons: ReasonsSelect<false> | ReasonsSelect<true>;
     'payload-kv': PayloadKvSelect<false> | PayloadKvSelect<true>;
     'payload-locked-documents': PayloadLockedDocumentsSelect<false> | PayloadLockedDocumentsSelect<true>;
     'payload-preferences': PayloadPreferencesSelect<false> | PayloadPreferencesSelect<true>;
@@ -291,6 +293,21 @@ export interface LoveLetter {
   createdAt: string;
 }
 /**
+ * Powers the "why I love you" button on the Home page — shuffles through these at random.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "reasons".
+ */
+export interface Reason {
+  id: number;
+  /**
+   * One reason. Mix serious and silly on purpose.
+   */
+  text: string;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "payload-kv".
  */
@@ -329,6 +346,10 @@ export interface PayloadLockedDocument {
     | ({
         relationTo: 'love-letters';
         value: number | LoveLetter;
+      } | null)
+    | ({
+        relationTo: 'reasons';
+        value: number | Reason;
       } | null);
   globalSlug?: string | null;
   user: {
@@ -473,6 +494,15 @@ export interface MemoriesSelect<T extends boolean = true> {
 export interface LoveLettersSelect<T extends boolean = true> {
   to?: T;
   message?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "reasons_select".
+ */
+export interface ReasonsSelect<T extends boolean = true> {
+  text?: T;
   updatedAt?: T;
   createdAt?: T;
 }

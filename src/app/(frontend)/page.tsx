@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import { getPayloadClient } from '@/lib/payload'
 import FloatingHearts from './components/FloatingHearts'
 import ReasonGenerator from './components/ReasonGenerator'
 import RunawayKiss from './components/RunawayKiss'
@@ -6,7 +7,27 @@ import TogetherCounter from './components/TogetherCounter'
 import QuizGame from './components/QuizGame'
 import { hero, nav } from './content'
 
-export default function HomePage() {
+export const dynamic = 'force-dynamic'
+
+async function getReasons(): Promise<string[]> {
+  try {
+    const payload = await getPayloadClient()
+    const { docs } = await payload.find({
+      collection: 'reasons',
+      sort: '-createdAt',
+      limit: 500,
+    })
+    return docs.map((doc) => doc.text as string).filter(Boolean)
+  } catch (error) {
+    // Fail soft — the button just hides itself if the list can't load.
+    console.error('Failed to load reasons from Payload:', error)
+    return []
+  }
+}
+
+export default async function HomePage() {
+  const reasons = await getReasons()
+
   return (
     <div className="relative overflow-hidden bg-gradient-to-b from-blush via-cream to-cream">
       <FloatingHearts />
@@ -27,12 +48,14 @@ export default function HomePage() {
         <TogetherCounter />
 
         {/* Reason generator */}
-        <div className="flex flex-col items-center gap-4 px-4 sm:px-0">
-          <h2 className="font-serif text-2xl text-berry sm:text-3xl">
-            In case you forgot why I&apos;m obsessed with you
-          </h2>
-          <ReasonGenerator />
-        </div>
+        {reasons.length > 0 && (
+          <div className="flex flex-col items-center gap-4 px-4 sm:px-0">
+            <h2 className="font-serif text-2xl text-berry sm:text-3xl">
+              In case you forgot why I&apos;m obsessed with you
+            </h2>
+            <ReasonGenerator reasons={reasons} />
+          </div>
+        )}
 
         {/* Quiz */}
         <div className="flex flex-col items-center gap-4 px-4 sm:px-0">
