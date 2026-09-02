@@ -3,15 +3,17 @@
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { nav } from '../content'
+import { logout } from '../login/actions'
 
 const links = [
-  { href: '/', label: nav.home },
   { href: '/memories', label: nav.memories },
   { href: '/letters', label: nav.letters },
 ]
 
 export default function Nav() {
   const pathname = usePathname()
+
+  if (pathname === '/login') return null
 
   return (
     <header className="glass sticky top-0 z-40 border-b border-rose/10">
@@ -37,6 +39,14 @@ export default function Nav() {
               </Link>
             )
           })}
+          <form action={logout}>
+            <button
+              type="submit"
+              className="tap-shrink whitespace-nowrap px-1.5 text-[11px] text-berry/40 transition hover:text-berry/70 sm:px-2 sm:text-xs"
+            >
+              Log out
+            </button>
+          </form>
         </nav>
       </div>
     </header>
