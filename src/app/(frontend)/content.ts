@@ -13,7 +13,7 @@ export const hero = {
   eyebrow: "A tiny app. For my one and only.",
   title: `For ${herName}, obviously.`,
   subtitle:
-    "I could've just texted you this, but I made you a whole website instead. That's how you know it's serious.",
+    "I could've just chat you this, but I made you a whole app instead. That's how you know it's serious.",
 }
 
 /** Shuffles through when the "why I love you" button is tapped. Mix serious and silly on purpose. */

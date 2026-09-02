@@ -25,7 +25,7 @@ const nextConfig = {
       {
         // Add your Vercel domain here once it's live
         protocol: 'https',
-        hostname: 'love-notes.vercel.app',
+        hostname: 'loveniraalways.vercel.app',
       },
     ],
     unoptimized: true,
