@@ -3,6 +3,7 @@ import FloatingHearts from './components/FloatingHearts'
 import ReasonGenerator from './components/ReasonGenerator'
 import RunawayKiss from './components/RunawayKiss'
 import TogetherCounter from './components/TogetherCounter'
+import QuizGame from './components/QuizGame'
 import { hero, nav } from './content'
 
 export default function HomePage() {
@@ -31,6 +32,12 @@ export default function HomePage() {
             In case you forgot why I&apos;m obsessed with you
           </h2>
           <ReasonGenerator />
+        </div>
+
+        {/* Quiz */}
+        <div className="flex flex-col items-center gap-4 px-4 sm:px-0">
+          <h2 className="font-serif text-2xl text-berry sm:text-3xl">How well do you know us?</h2>
+          <QuizGame />
         </div>
 
         {/* Runaway kiss game */}
