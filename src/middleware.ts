@@ -3,8 +3,9 @@ import { AUTH_COOKIE, todaysPassword } from '@/lib/dailyPassword'
 
 export function middleware(req: NextRequest) {
   const cookie = req.cookies.get(AUTH_COOKIE)?.value
+  const password = cookie?.split(':')[1]
 
-  if (cookie === todaysPassword()) {
+  if (password === todaysPassword()) {
     return NextResponse.next()
   }
 

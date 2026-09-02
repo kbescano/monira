@@ -72,6 +72,8 @@ export interface Config {
     memories: Memory;
     'love-letters': LoveLetter;
     reasons: Reason;
+    videos: Video;
+    notifications: Notification;
     'payload-kv': PayloadKv;
     'payload-locked-documents': PayloadLockedDocument;
     'payload-preferences': PayloadPreference;
@@ -84,6 +86,8 @@ export interface Config {
     memories: MemoriesSelect<false> | MemoriesSelect<true>;
     'love-letters': LoveLettersSelect<false> | LoveLettersSelect<true>;
     reasons: ReasonsSelect<false> | ReasonsSelect<true>;
+    videos: VideosSelect<false> | VideosSelect<true>;
+    notifications: NotificationsSelect<false> | NotificationsSelect<true>;
     'payload-kv': PayloadKvSelect<false> | PayloadKvSelect<true>;
     'payload-locked-documents': PayloadLockedDocumentsSelect<false> | PayloadLockedDocumentsSelect<true>;
     'payload-preferences': PayloadPreferencesSelect<false> | PayloadPreferencesSelect<true>;
@@ -270,11 +274,15 @@ export interface Memory {
    * Used to order the memories — defaults to today if left blank.
    */
   memoryDate?: string | null;
+  /**
+   * Who added this memory — powers the "X uploaded a photo" notification.
+   */
+  uploadedBy?: ('Ken' | 'Nira') | null;
   updatedAt: string;
   createdAt: string;
 }
 /**
- * Every letter here shows up on the Letters feed, newest first.
+ * Every letter here shows up on the Letters feed — pinned ones float to the top.
  *
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "love-letters".
@@ -286,9 +294,17 @@ export interface LoveLetter {
    */
   to: 'Ken' | 'Nira';
   /**
+   * Who wrote it — set automatically from who was logged in.
+   */
+  from?: ('Ken' | 'Nira') | null;
+  /**
    * The letter itself.
    */
   message: string;
+  /**
+   * Pin this letter to the top of the feed.
+   */
+  pinned?: boolean | null;
   updatedAt: string;
   createdAt: string;
 }
@@ -304,6 +320,112 @@ export interface Reason {
    * One reason. Mix serious and silly on purpose.
    */
   text: string;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * Video messages that delete themselves — Cloudinary asset included — the moment someone opens the watch link. Once it's gone from here, it's gone.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "videos".
+ */
+export interface Video {
+  id: number;
+  /**
+   * Optional — shown on the /videos list before it's watched.
+   */
+  caption?: string | null;
+  /**
+   * Who sent it. The watch page only burns it when the *other* person opens it — the sender can preview their own without spending it.
+   */
+  uploadedBy?: ('Ken' | 'Nira') | null;
+  /**
+   * Cloudinary Media Information
+   */
+  cloudinary?: {
+    /**
+     * Cloudinary Public ID (used for transformations)
+     */
+    public_id?: string | null;
+    /**
+     * Type of the resource (image, video, raw)
+     */
+    resource_type?: string | null;
+    /**
+     * File format
+     */
+    format?: string | null;
+    /**
+     * Secure delivery URL
+     */
+    secure_url?: string | null;
+    /**
+     * File size in bytes
+     */
+    bytes?: number | null;
+    /**
+     * Creation timestamp
+     */
+    created_at?: string | null;
+    /**
+     * Current version number
+     */
+    version?: string | null;
+    /**
+     * Unique version identifier
+     */
+    version_id?: string | null;
+    /**
+     * Width in pixels
+     */
+    width?: number | null;
+    /**
+     * Height in pixels
+     */
+    height?: number | null;
+    /**
+     * Duration in seconds (for videos)
+     */
+    duration?: number | null;
+    /**
+     * Number of pages (for PDFs)
+     */
+    pages?: number | null;
+    /**
+     * Which page of the PDF to use for thumbnails (changes will apply after saving)
+     */
+    selected_page?: number | null;
+    /**
+     * URL for the thumbnail image (automatically generated for PDFs)
+     */
+    thumbnail_url?: string | null;
+  };
+  updatedAt: string;
+  createdAt: string;
+  url?: string | null;
+  thumbnailURL?: string | null;
+  filename?: string | null;
+  mimeType?: string | null;
+  filesize?: number | null;
+  width?: number | null;
+  height?: number | null;
+  focalX?: number | null;
+  focalY?: number | null;
+}
+/**
+ * Auto-created when a letter arrives or a photo is uploaded. The bell only shows the last 24 hours.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "notifications".
+ */
+export interface Notification {
+  id: number;
+  message: string;
+  /**
+   * Who this notification is for.
+   */
+  forUser: 'Ken' | 'Nira';
+  read?: boolean | null;
   updatedAt: string;
   createdAt: string;
 }
@@ -350,6 +472,14 @@ export interface PayloadLockedDocument {
     | ({
         relationTo: 'reasons';
         value: number | Reason;
+      } | null)
+    | ({
+        relationTo: 'videos';
+        value: number | Video;
+      } | null)
+    | ({
+        relationTo: 'notifications';
+        value: number | Notification;
       } | null);
   globalSlug?: string | null;
   user: {
@@ -484,6 +614,7 @@ export interface MemoriesSelect<T extends boolean = true> {
   description?: T;
   image?: T;
   memoryDate?: T;
+  uploadedBy?: T;
   updatedAt?: T;
   createdAt?: T;
 }
@@ -493,7 +624,9 @@ export interface MemoriesSelect<T extends boolean = true> {
  */
 export interface LoveLettersSelect<T extends boolean = true> {
   to?: T;
+  from?: T;
   message?: T;
+  pinned?: T;
   updatedAt?: T;
   createdAt?: T;
 }
@@ -503,6 +636,54 @@ export interface LoveLettersSelect<T extends boolean = true> {
  */
 export interface ReasonsSelect<T extends boolean = true> {
   text?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "videos_select".
+ */
+export interface VideosSelect<T extends boolean = true> {
+  caption?: T;
+  uploadedBy?: T;
+  cloudinary?:
+    | T
+    | {
+        public_id?: T;
+        resource_type?: T;
+        format?: T;
+        secure_url?: T;
+        bytes?: T;
+        created_at?: T;
+        version?: T;
+        version_id?: T;
+        width?: T;
+        height?: T;
+        duration?: T;
+        pages?: T;
+        selected_page?: T;
+        thumbnail_url?: T;
+      };
+  updatedAt?: T;
+  createdAt?: T;
+  url?: T;
+  thumbnailURL?: T;
+  filename?: T;
+  mimeType?: T;
+  filesize?: T;
+  width?: T;
+  height?: T;
+  focalX?: T;
+  focalY?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "notifications_select".
+ */
+export interface NotificationsSelect<T extends boolean = true> {
+  message?: T;
+  forUser?: T;
+  read?: T;
   updatedAt?: T;
   createdAt?: T;
 }

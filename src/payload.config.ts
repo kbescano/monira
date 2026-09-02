@@ -11,6 +11,8 @@ import { Media } from './collections/Media'
 import { Memories } from './collections/Memories'
 import { LoveLetters } from './collections/LoveLetters'
 import { Reasons } from './collections/Reasons'
+import { Videos } from './collections/Videos'
+import { Notifications } from './collections/Notifications'
 
 const filename = fileURLToPath(import.meta.url)
 const dirname = path.dirname(filename)
@@ -23,7 +25,7 @@ export default buildConfig({
     },
   },
   sharp,
-  collections: [Users, Media, Memories, LoveLetters, Reasons],
+  collections: [Users, Media, Memories, LoveLetters, Reasons, Videos, Notifications],
   editor: lexicalEditor({}),
   secret: process.env.PAYLOAD_SECRET || '',
   typescript: {
@@ -43,6 +45,7 @@ export default buildConfig({
       },
       collections: {
         media: true,
+        videos: true,
       },
     }),
   ],

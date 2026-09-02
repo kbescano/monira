@@ -3,20 +3,26 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { motion, AnimatePresence } from 'motion/react'
+import type { Person } from '@/lib/dailyPassword'
 
-const RECIPIENTS = ['Ken', 'Nira'] as const
-
-export default function WriteLoveLetter() {
+export default function WriteLoveLetter({
+  currentUser,
+  defaultTo,
+}: {
+  currentUser: Person | null
+  defaultTo: Person
+}) {
   const router = useRouter()
 
   const [open, setOpen] = useState(false)
-  const [to, setTo] = useState<(typeof RECIPIENTS)[number]>('Nira')
+  // There's only ever one valid recipient (the other logged-in person) — no
+  // picker needed, this can't be changed.
+  const to = defaultTo
   const [message, setMessage] = useState('')
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
   const reset = () => {
-    setTo('Nira')
     setMessage('')
     setSaving(false)
     setError(null)
@@ -41,7 +47,7 @@ export default function WriteLoveLetter() {
       const res = await fetch('/api/love-letters', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ to, message: message.trim() }),
+        body: JSON.stringify({ to, message: message.trim(), from: currentUser ?? undefined }),
       })
       if (!res.ok) throw new Error('Could not save the letter. Please try again.')
 
@@ -59,7 +65,7 @@ export default function WriteLoveLetter() {
       <button
         onClick={() => setOpen(true)}
         aria-label="Write a love letter"
-        className="tap-shrink fixed bottom-6 right-6 z-40 flex h-14 w-14 items-center justify-center rounded-full bg-rose text-white shadow-lg shadow-rose/30 transition hover:scale-105 hover:bg-berry active:scale-95 sm:bottom-8 sm:right-8"
+        className="tap-shrink fixed bottom-20 right-6 z-50 flex h-14 w-14 items-center justify-center rounded-full bg-rose text-white shadow-lg shadow-rose/30 transition hover:scale-105 hover:bg-berry active:scale-95 sm:bottom-8 sm:right-8"
       >
         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true">
           <path d="M12 5v14M5 12h14" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
@@ -99,21 +105,8 @@ export default function WriteLoveLetter() {
                   <span className="mb-2 block text-xs font-medium uppercase tracking-widest text-rose">
                     To
                   </span>
-                  <div className="flex gap-2">
-                    {RECIPIENTS.map((name) => (
-                      <button
-                        key={name}
-                        type="button"
-                        onClick={() => setTo(name)}
-                        className={`tap-shrink flex-1 rounded-full border py-2.5 text-sm font-medium transition ${
-                          to === name
-                            ? 'border-berry bg-berry text-white'
-                            : 'border-rose/20 bg-white text-plum/60 hover:border-rose/40'
-                        }`}
-                      >
-                        {name}
-                      </button>
-                    ))}
+                  <div className="rounded-full border border-berry bg-berry px-4 py-2.5 text-center text-sm font-medium text-white">
+                    {to}
                   </div>
                 </div>
 

@@ -68,6 +68,8 @@ export const nav = {
   home: 'Home',
   memories: 'Memories',
   letters: 'Letters',
+  videos: 'Videos',
+  viewOnce: 'View once',
 }
 
 export const memoriesPage = {

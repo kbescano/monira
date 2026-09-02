@@ -4,10 +4,11 @@ import { useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { motion, AnimatePresence } from 'motion/react'
 import { compressImage } from './compressImage'
+import type { Person } from '@/lib/dailyPassword'
 
 type Status = 'idle' | 'compressing' | 'uploading' | 'error'
 
-export default function UploadMemory() {
+export default function UploadMemory({ currentUser }: { currentUser: Person | null }) {
   const router = useRouter()
   const fileInputRef = useRef<HTMLInputElement>(null)
 
@@ -71,6 +72,7 @@ export default function UploadMemory() {
           title: title.trim(),
           description: description.trim(),
           image: mediaId,
+          uploadedBy: currentUser ?? undefined,
         }),
       })
       if (!memoryRes.ok) throw new Error('Could not save the memory. Please try again.')
@@ -91,7 +93,7 @@ export default function UploadMemory() {
       <button
         onClick={() => setOpen(true)}
         aria-label="Add a memory"
-        className="tap-shrink fixed bottom-6 right-6 z-40 flex h-14 w-14 items-center justify-center rounded-full bg-rose text-white shadow-lg shadow-rose/30 transition hover:scale-105 hover:bg-berry active:scale-95 sm:bottom-8 sm:right-8"
+        className="tap-shrink fixed bottom-20 right-6 z-50 flex h-14 w-14 items-center justify-center rounded-full bg-rose text-white shadow-lg shadow-rose/30 transition hover:scale-105 hover:bg-berry active:scale-95 sm:bottom-8 sm:right-8"
       >
         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true">
           <path d="M12 5v14M5 12h14" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />

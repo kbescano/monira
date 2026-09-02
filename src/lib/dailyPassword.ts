@@ -13,5 +13,17 @@ export function todaysPassword(): string {
   return `${month}${day}`
 }
 
-export const SITE_USERNAME = 'keiraforevs'
+export type Person = 'Ken' | 'Nira'
+
+// Usernames are intentionally swapped — each person logs in with the other's
+// name. Both share the same rotating daily password.
+export const USERS: Record<string, Person> = {
+  niraforevs: 'Ken',
+  keiraforevs: 'Nira',
+}
+
+export function otherPerson(person: Person): Person {
+  return person === 'Ken' ? 'Nira' : 'Ken'
+}
+
 export const AUTH_COOKIE = 'site_auth'

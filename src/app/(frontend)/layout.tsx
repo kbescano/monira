@@ -1,6 +1,8 @@
-import type { Metadata } from 'next'
+import type { Metadata, Viewport } from 'next'
 import { Dancing_Script, Playfair_Display } from 'next/font/google'
 import Nav from './components/Nav'
+import BottomNav from './components/BottomNav'
+import { getCurrentUser } from '@/lib/session'
 import './globals.css'
 
 const script = Dancing_Script({
@@ -20,12 +22,22 @@ export const metadata: Metadata = {
   description: 'A tiny corner of the internet, just for us.',
 }
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+// viewportFit: 'cover' lets the page draw under the iPhone notch/home-indicator
+// area so env(safe-area-inset-*) below actually resolves to a real value
+// instead of 0 — needed for the fixed bottom nav to clear the home indicator.
+export const viewport: Viewport = {
+  viewportFit: 'cover',
+}
+
+export default async function RootLayout({ children }: { children: React.ReactNode }) {
+  const currentUser = await getCurrentUser()
+
   return (
     <html lang="en" className={`${script.variable} ${serif.variable}`}>
       <body className="min-h-screen bg-cream text-plum">
-        <Nav />
-        <main className="min-h-screen">{children}</main>
+        <Nav currentUser={currentUser} />
+        <main className="min-h-screen pb-20 sm:pb-0">{children}</main>
+        <BottomNav />
       </body>
     </html>
   )

@@ -1,4 +1,6 @@
 import { getPayloadClient } from '@/lib/payload'
+import { getCurrentUser } from '@/lib/session'
+import { otherPerson } from '@/lib/dailyPassword'
 import WriteLoveLetter from '../components/WriteLoveLetter'
 import { lettersPage } from '../content'
 
@@ -9,6 +11,7 @@ type Letter = {
   to: string
   message: string
   createdAt: string
+  pinned: boolean
 }
 
 async function getLetters(): Promise<{ letters: Letter[]; failed: boolean }> {
@@ -16,7 +19,8 @@ async function getLetters(): Promise<{ letters: Letter[]; failed: boolean }> {
     const payload = await getPayloadClient()
     const { docs } = await payload.find({
       collection: 'love-letters',
-      sort: '-createdAt',
+      // Pinned letters float to the top, newest-first within each group.
+      sort: '-pinned,-createdAt',
       limit: 200,
     })
 
@@ -25,6 +29,7 @@ async function getLetters(): Promise<{ letters: Letter[]; failed: boolean }> {
       to: doc.to as string,
       message: doc.message as string,
       createdAt: doc.createdAt as string,
+      pinned: Boolean(doc.pinned),
     }))
 
     return { letters, failed: false }
@@ -47,7 +52,8 @@ function formatDate(value: string) {
 }
 
 export default async function LettersPage() {
-  const { letters, failed } = await getLetters()
+  const [{ letters, failed }, currentUser] = await Promise.all([getLetters(), getCurrentUser()])
+  const defaultTo = currentUser ? otherPerson(currentUser) : 'Nira'
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-blush via-cream to-cream">
@@ -78,10 +84,15 @@ export default async function LettersPage() {
           {letters.map((letter) => (
             <article
               key={letter.id}
-              className="rounded-3xl border border-rose/15 bg-white/70 px-6 py-6 shadow-sm shadow-rose/5 sm:px-8 sm:py-8"
+              className={`rounded-3xl border px-6 py-6 shadow-sm sm:px-8 sm:py-8 ${
+                letter.pinned
+                  ? 'border-rose/30 bg-white shadow-rose/10'
+                  : 'border-rose/15 bg-white/70 shadow-rose/5'
+              }`}
             >
               <div className="mb-3 flex items-center justify-between">
-                <span className="text-xs font-semibold uppercase tracking-widest text-rose">
+                <span className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-widest text-rose">
+                  {letter.pinned && <span aria-label="Pinned">📌</span>}
                   To {letter.to}
                 </span>
                 <span className="text-xs text-plum/40">{formatDate(letter.createdAt)}</span>
@@ -94,7 +105,7 @@ export default async function LettersPage() {
         </div>
       )}
 
-      <WriteLoveLetter />
+      <WriteLoveLetter currentUser={currentUser} defaultTo={defaultTo} />
     </div>
   )
 }

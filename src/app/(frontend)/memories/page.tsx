@@ -1,4 +1,5 @@
 import { getPayloadClient } from '@/lib/payload'
+import { getCurrentUser } from '@/lib/session'
 import MemoriesGallery, { type MemoryItem } from '../components/MemoriesGallery'
 import UploadMemory from '../components/UploadMemory'
 import { memoriesPage } from '../content'
@@ -58,7 +59,7 @@ async function getMemories(): Promise<{ memories: MemoryItem[]; failed: boolean 
 }
 
 export default async function MemoriesPage() {
-  const { memories, failed } = await getMemories()
+  const [{ memories, failed }, currentUser] = await Promise.all([getMemories(), getCurrentUser()])
 
   return (
     <div className="min-h-screen bg-cream">
@@ -83,7 +84,7 @@ export default async function MemoriesPage() {
         <MemoriesGallery memories={memories} />
       )}
 
-      <UploadMemory />
+      <UploadMemory currentUser={currentUser} />
     </div>
   )
 }

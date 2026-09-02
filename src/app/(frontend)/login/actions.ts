@@ -2,7 +2,7 @@
 
 import { cookies } from 'next/headers'
 import { redirect } from 'next/navigation'
-import { AUTH_COOKIE, SITE_USERNAME, todaysPassword } from '@/lib/dailyPassword'
+import { AUTH_COOKIE, USERS, todaysPassword } from '@/lib/dailyPassword'
 
 export async function login(formData: FormData) {
   const username = String(formData.get('username') ?? '').trim()
@@ -10,12 +10,13 @@ export async function login(formData: FormData) {
   const next = String(formData.get('next') ?? '/')
   const safeNext = next.startsWith('/') && !next.startsWith('//') ? next : '/'
 
-  if (username !== SITE_USERNAME || password !== todaysPassword()) {
+  const person = USERS[username]
+  if (!person || password !== todaysPassword()) {
     redirect(`/login?next=${encodeURIComponent(safeNext)}&error=1`)
   }
 
   const store = await cookies()
-  store.set(AUTH_COOKIE, todaysPassword(), {
+  store.set(AUTH_COOKIE, `${person}:${todaysPassword()}`, {
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',
     sameSite: 'lax',

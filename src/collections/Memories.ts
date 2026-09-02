@@ -8,7 +8,7 @@ export const Memories: CollectionConfig = {
   },
   admin: {
     useAsTitle: 'title',
-    defaultColumns: ['image', 'title', 'memoryDate'],
+    defaultColumns: ['image', 'title', 'uploadedBy', 'memoryDate'],
     description: 'Every card here shows up on the Memories page, newest first.',
   },
   defaultSort: '-memoryDate',
@@ -20,6 +20,28 @@ export const Memories: CollectionConfig = {
     create: () => true,
     update: ({ req }) => Boolean(req.user),
     delete: ({ req }) => Boolean(req.user),
+  },
+  hooks: {
+    afterChange: [
+      async ({ doc, operation, req }) => {
+        if (operation !== 'create') return
+        const uploadedBy = doc.uploadedBy as string | undefined
+        if (uploadedBy !== 'Ken' && uploadedBy !== 'Nira') return
+        const forUser = uploadedBy === 'Ken' ? 'Nira' : 'Ken'
+        try {
+          await req.payload.create({
+            collection: 'notifications',
+            data: {
+              message: `${uploadedBy} uploaded a photo`,
+              forUser,
+              read: false,
+            },
+          })
+        } catch (err) {
+          req.payload.logger.error(err)
+        }
+      },
+    ],
   },
   fields: [
     {
@@ -55,6 +77,18 @@ export const Memories: CollectionConfig = {
         description: 'Used to order the memories — defaults to today if left blank.',
       },
       defaultValue: () => new Date().toISOString(),
+    },
+    {
+      name: 'uploadedBy',
+      type: 'select',
+      options: [
+        { label: 'Ken', value: 'Ken' },
+        { label: 'Nira', value: 'Nira' },
+      ],
+      admin: {
+        position: 'sidebar',
+        description: 'Who added this memory — powers the "X uploaded a photo" notification.',
+      },
     },
   ],
 }
