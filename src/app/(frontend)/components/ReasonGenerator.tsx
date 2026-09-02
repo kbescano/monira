@@ -1,20 +1,39 @@
 'use client'
 
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { motion, AnimatePresence } from 'motion/react'
+
+// Fisher-Yates — a fresh random order of every index each time the bag refills.
+function shuffled(length: number): number[] {
+  const arr = Array.from({ length }, (_, i) => i)
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1))
+    ;[arr[i], arr[j]] = [arr[j], arr[i]]
+  }
+  return arr
+}
 
 export default function ReasonGenerator({ reasons }: { reasons: string[] }) {
   const [index, setIndex] = useState<number | null>(null)
   const [count, setCount] = useState(0)
+  // A "shuffle bag": a random-ordered queue of every reason. Draw from it
+  // until empty, then reshuffle a new one — so it stays random each round,
+  // but the whole set is always seen once before anything repeats.
+  const bagRef = useRef<number[]>([])
 
   if (reasons.length === 0) return null
 
   const showNext = () => {
-    let next = Math.floor(Math.random() * reasons.length)
-    // Avoid repeating the same reason twice in a row when possible.
-    if (reasons.length > 1 && next === index) {
-      next = (next + 1) % reasons.length
+    if (bagRef.current.length === 0) {
+      let bag = shuffled(reasons.length)
+      // Don't let the new bag's first draw match what's on screen right now —
+      // that would read as a repeat across the cycle boundary.
+      if (reasons.length > 1 && bag[0] === index) {
+        ;[bag[0], bag[1]] = [bag[1], bag[0]]
+      }
+      bagRef.current = bag
     }
+    const next = bagRef.current.shift()!
     setIndex(next)
     setCount((c) => c + 1)
   }
