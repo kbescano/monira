@@ -4,10 +4,21 @@ import { useEffect, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { isMobileOrTablet } from '../../components/isMobileOrTablet'
 import { revealVideo, burnVideo } from './actions'
+import type { Person } from '@/lib/dailyPassword'
 
 type State = 'idle' | 'checking' | 'blocked' | 'playing' | 'gone'
 
-export default function WatchVideoClient({ id, exists }: { id: string; exists: boolean }) {
+export default function WatchVideoClient({
+  id,
+  exists,
+  uploadedBy,
+  currentUser,
+}: {
+  id: string
+  exists: boolean
+  uploadedBy: Person | null
+  currentUser: Person | null
+}) {
   const router = useRouter()
   const videoRef = useRef<HTMLVideoElement>(null)
   const burnedRef = useRef(false)
@@ -151,10 +162,17 @@ export default function WatchVideoClient({ id, exists }: { id: string; exists: b
     )
   }
 
+  const heading =
+    uploadedBy && currentUser && uploadedBy === currentUser
+      ? 'You sent a video'
+      : uploadedBy
+        ? `${uploadedBy} sent you a video`
+        : 'Someone sent you a video'
+
   return (
     <div className="flex min-h-screen flex-col items-center justify-center gap-4 bg-gradient-to-b from-blush via-cream to-cream px-6 text-center">
       <span className="text-4xl">🎬</span>
-      <h1 className="font-serif text-xl text-berry">Someone sent you a video</h1>
+      <h1 className="font-serif text-xl text-berry">{heading}</h1>
       <p className="max-w-sm text-sm text-plum/60">This plays once, then it&apos;s gone. Ready?</p>
       <button
         onClick={reveal}
