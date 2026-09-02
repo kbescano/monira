@@ -21,13 +21,13 @@ export const reasons: string[] = [
   'You laugh at my jokes even when they are objectively not funny.',
   'You make the most mediocre days feel like a whole event.',
   'You steal the blanket and somehow I still want to cuddle.',
-  'Your text messages are better than any movie plot twist.',
-  'You are the reason my group chat screenshots you constantly.',
-  'You put up with my terrible singing in the car.',
-  "I've never met someone who can make snacks disappear that fast, and I respect it.",
-  'You make ordinary Tuesdays feel like a good idea.',
+  'Tipid sa away kasi lagi kang tulog haha',
+  'Always create memories with me, even if it’s just a simple walk sa Southwoods or Vermosa',
   "Honestly? You're just really, really good at being you.",
-  'You once let me win an argument and never brought it up again. A legend.',
+  "Pag may peace of mind ako, ilalabas mo na si Monira",
+  'You once let me win an argument and never brought it up again. A legend. A dream come true',
+  "Kasi may once a month redeem? hahahaha",
+  "You always know how to make me laugh, I love how we laugh together even at holiest places"
 ]
 
 /** Shown after the runaway button finally gets caught. */
@@ -60,7 +60,7 @@ export const quiz: QuizQuestion[] = [
     funFact: 'Edit this one — put the real (embarrassing) answer here.',
   },
   {
-    question: 'Most likely to text "u up?" first',
+    question: 'Most likely to text "morning?" first',
     options: ['Me', 'You', 'Both, simultaneously', 'We just show up'],
     correctIndex: 2,
     funFact: 'Edit this one too — this is your quiz, make it yours.',
