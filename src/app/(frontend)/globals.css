@@ -1,0 +1,38 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: light;
+}
+
+html,
+body {
+  height: 100%;
+}
+
+body {
+  background: #fff8f0;
+  color: #590d22;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Frosted glass used by the memories lightbox + nav */
+.glass {
+  background: rgba(255, 255, 255, 0.7);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}
+
+/* Subtle heart-shaped cursor trail button press feedback */
+.tap-shrink {
+  transition: transform 120ms ease;
+}
+.tap-shrink:active {
+  transform: scale(0.94);
+}
+
+::selection {
+  background: #ff6f91;
+  color: #fff8f0;
+}

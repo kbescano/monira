@@ -1,0 +1,49 @@
+{
+  "name": "love-notes",
+  "version": "1.0.0",
+  "description": "A little romantic corner of the internet, just for us.",
+  "license": "UNLICENSED",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "cross-env NODE_OPTIONS=\"--no-deprecation --max-old-space-size=8000\" next build",
+    "dev": "cross-env NODE_OPTIONS=--no-deprecation next dev",
+    "devsafe": "rm -rf .next && cross-env NODE_OPTIONS=--no-deprecation next dev",
+    "generate:importmap": "cross-env NODE_OPTIONS=--no-deprecation payload generate:importmap",
+    "generate:types": "cross-env NODE_OPTIONS=--no-deprecation payload generate:types",
+    "lint": "cross-env NODE_OPTIONS=--no-deprecation next lint",
+    "payload": "cross-env NODE_OPTIONS=--no-deprecation payload",
+    "start": "cross-env NODE_OPTIONS=--no-deprecation next start"
+  },
+  "dependencies": {
+    "@payloadcms/db-postgres": "3.79.0",
+    "@payloadcms/next": "3.79.0",
+    "@payloadcms/richtext-lexical": "3.79.0",
+    "cloudinary": "^2.9.0",
+    "cross-env": "^7.0.3",
+    "dotenv": "16.4.7",
+    "graphql": "^16.8.1",
+    "motion": "^12.38.0",
+    "next": "15.4.11",
+    "payload": "3.79.0",
+    "payload-cloudinary": "^2.3.0",
+    "react": "19.2.1",
+    "react-dom": "19.2.1",
+    "sharp": "0.34.2"
+  },
+  "devDependencies": {
+    "@eslint/eslintrc": "^3.3.5",
+    "@types/node": "22.19.9",
+    "@types/react": "19.2.9",
+    "@types/react-dom": "19.2.3",
+    "autoprefixer": "10.4.16",
+    "eslint": "^9.16.0",
+    "eslint-config-next": "15.4.11",
+    "postcss": "8.4.31",
+    "tailwindcss": "3.4.1",
+    "typescript": "5.7.3"
+  },
+  "engines": {
+    "node": "^18.20.2 || >=20.9.0"
+  }
+}
