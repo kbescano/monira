@@ -42,6 +42,7 @@ export const Videos: CollectionConfig = {
             data: {
               message: `${uploadedBy} sent you a video`,
               forUser,
+              link: `/videos/${doc.id}`,
               read: false,
             },
           })

@@ -45,5 +45,12 @@ export const Notifications: CollectionConfig = {
       type: 'checkbox',
       defaultValue: false,
     },
+    {
+      name: 'link',
+      type: 'text',
+      admin: {
+        description: 'Where tapping this notification goes — a relative path like /videos/123.',
+      },
+    },
   ],
 }

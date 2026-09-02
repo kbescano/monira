@@ -34,6 +34,7 @@ export const Memories: CollectionConfig = {
             data: {
               message: `${uploadedBy} uploaded a photo`,
               forUser,
+              link: '/memories',
               read: false,
             },
           })

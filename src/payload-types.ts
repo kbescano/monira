@@ -426,6 +426,10 @@ export interface Notification {
    */
   forUser: 'Ken' | 'Nira';
   read?: boolean | null;
+  /**
+   * Where tapping this notification goes — a relative path like /videos/123.
+   */
+  link?: string | null;
   updatedAt: string;
   createdAt: string;
 }
@@ -684,6 +688,7 @@ export interface NotificationsSelect<T extends boolean = true> {
   message?: T;
   forUser?: T;
   read?: T;
+  link?: T;
   updatedAt?: T;
   createdAt?: T;
 }

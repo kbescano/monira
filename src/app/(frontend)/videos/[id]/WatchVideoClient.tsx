@@ -11,6 +11,9 @@ export default function WatchVideoClient({ id, exists }: { id: string; exists: b
   const router = useRouter()
   const videoRef = useRef<HTMLVideoElement>(null)
   const burnedRef = useRef(false)
+  const loopCountRef = useRef(0)
+
+  const MAX_LOOPS = 5
 
   const [state, setState] = useState<State>(exists ? 'idle' : 'gone')
   const [url, setUrl] = useState<string | null>(null)
@@ -63,6 +66,20 @@ export default function WatchVideoClient({ id, exists }: { id: string; exists: b
     if (burnedRef.current) return
     burnedRef.current = true
     burnVideo(id)
+  }
+
+  // Loops the clip in place — up to MAX_LOOPS total plays — then auto-closes.
+  // The ✕ button still lets them close early at any point.
+  const handleEnded = () => {
+    loopCountRef.current += 1
+    if (loopCountRef.current >= MAX_LOOPS) {
+      leave()
+      return
+    }
+    const v = videoRef.current
+    if (!v) return
+    v.currentTime = 0
+    v.play().catch(() => {})
   }
 
   if (state === 'gone') {
@@ -121,7 +138,7 @@ export default function WatchVideoClient({ id, exists }: { id: string; exists: b
           playsInline
           onTimeUpdate={handleTimeUpdate}
           onPlaying={handlePlaying}
-          onEnded={leave}
+          onEnded={handleEnded}
           className="h-full w-full object-contain"
         />
 

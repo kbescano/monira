@@ -36,6 +36,7 @@ export const LoveLetters: CollectionConfig = {
               message: `${who} sent you a letter`,
               forUser: to,
               read: false,
+              link: '/letters',
             },
           })
         } catch (err) {

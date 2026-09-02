@@ -1,6 +1,7 @@
 'use client'
 
 import { useCallback, useEffect, useState } from 'react'
+import Link from 'next/link'
 import type { Person } from '@/lib/dailyPassword'
 
 type Notification = {
@@ -8,9 +9,16 @@ type Notification = {
   message: string
   read: boolean
   createdAt: string
+  link: string | null
 }
 
-type RawDoc = { id: number | string; message: string; read?: boolean; createdAt: string }
+type RawDoc = {
+  id: number | string
+  message: string
+  read?: boolean
+  createdAt: string
+  link?: string | null
+}
 
 function timeAgo(iso: string): string {
   const diffMs = Date.now() - new Date(iso).getTime()
@@ -47,6 +55,7 @@ export default function NotificationBell({ currentUser }: { currentUser: Person 
           message: d.message,
           read: Boolean(d.read),
           createdAt: d.createdAt,
+          link: d.link ?? null,
         })),
       )
     } catch {
@@ -120,12 +129,24 @@ export default function NotificationBell({ currentUser }: { currentUser: Person 
             {items.length === 0 ? (
               <p className="px-4 py-6 text-center text-sm text-plum/50">Nothing in the last day.</p>
             ) : (
-              items.map((n) => (
-                <div key={n.id} className="border-b border-rose/10 px-4 py-3 last:border-0">
-                  <p className="text-sm text-plum">{n.message}</p>
-                  <p className="mt-0.5 text-xs text-plum/40">{timeAgo(n.createdAt)}</p>
-                </div>
-              ))
+              items.map((n) =>
+                n.link ? (
+                  <Link
+                    key={n.id}
+                    href={n.link}
+                    onClick={() => setOpen(false)}
+                    className="block border-b border-rose/10 px-4 py-3 transition last:border-0 hover:bg-rose/5"
+                  >
+                    <p className="text-sm text-plum">{n.message}</p>
+                    <p className="mt-0.5 text-xs text-plum/40">{timeAgo(n.createdAt)}</p>
+                  </Link>
+                ) : (
+                  <div key={n.id} className="border-b border-rose/10 px-4 py-3 last:border-0">
+                    <p className="text-sm text-plum">{n.message}</p>
+                    <p className="mt-0.5 text-xs text-plum/40">{timeAgo(n.createdAt)}</p>
+                  </div>
+                ),
+              )
             )}
           </div>
         </>
