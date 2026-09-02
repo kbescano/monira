@@ -16,7 +16,7 @@ const serif = Playfair_Display({
 })
 
 export const metadata: Metadata = {
-  title: 'Love Notes',
+  title: 'Love Nira always',
   description: 'A tiny corner of the internet, just for us.',
 }
 

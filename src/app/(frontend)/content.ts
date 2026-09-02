@@ -10,7 +10,7 @@ export const herName = 'You'
 export const togetherSince = '2025-01-02'
 
 export const hero = {
-  eyebrow: "A tiny website. A big crush.",
+  eyebrow: "A tiny app. For my one and only.",
   title: `For ${herName}, obviously.`,
   subtitle:
     "I could've just texted you this, but I made you a whole website instead. That's how you know it's serious.",
@@ -25,9 +25,11 @@ export const reasons: string[] = [
   'Always create memories with me, even if it’s just a simple walk sa Southwoods or Vermosa',
   "Honestly? You're just really, really good at being you.",
   "Pag may peace of mind ako, ilalabas mo na si Monira",
+  "Always make me feel like a King when you feed me while driving.",
   'You once let me win an argument and never brought it up again. A legend. A dream come true',
   "Kasi may once a month redeem? hahahaha",
-  "You always know how to make me laugh, I love how we laugh together even at holiest places"
+  "Because you are the best mom, sister or daughter that could possibly be. As partner? Even better.",
+  "You always know how to make me laugh — I love how we laugh together, even in the holiest of places."
 ]
 
 /** Shown after the runaway button finally gets caught. */
@@ -65,10 +67,16 @@ export const quiz: QuizQuestion[] = [
     correctIndex: 2,
     funFact: 'Edit this one too — this is your quiz, make it yours.',
   },
+   {
+    question: 'Who always starts an argument first? Haha',
+    options: ['Me', 'You', 'Both, simultaneously', 'We just show up'],
+    correctIndex: 1,
+    funFact: 'No question about this one — we both know the answer.',
+  },
 ]
 
 export const nav = {
-  brand: 'Love Notes',
+  brand: 'Love Nira always',
   home: 'Home',
   memories: 'Memories',
 }

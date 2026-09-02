@@ -17,7 +17,7 @@ export default buildConfig({
   admin: {
     user: Users.slug,
     meta: {
-      titleSuffix: ' — Love Notes',
+      titleSuffix: ' — Love Nira always',
     },
   },
   sharp,
