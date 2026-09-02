@@ -11,6 +11,7 @@
     "devsafe": "rm -rf .next && cross-env NODE_OPTIONS=--no-deprecation next dev",
     "generate:importmap": "cross-env NODE_OPTIONS=--no-deprecation payload generate:importmap",
     "generate:types": "cross-env NODE_OPTIONS=--no-deprecation payload generate:types",
+    "import:photos": "cross-env NODE_OPTIONS=--no-deprecation bun run scripts/import-photos.ts",
     "lint": "cross-env NODE_OPTIONS=--no-deprecation next lint",
     "payload": "cross-env NODE_OPTIONS=--no-deprecation payload",
     "start": "cross-env NODE_OPTIONS=--no-deprecation next start"
@@ -18,6 +19,7 @@
   "dependencies": {
     "@payloadcms/db-postgres": "3.79.0",
     "@payloadcms/next": "3.79.0",
+    "@payloadcms/plugin-cloud-storage": "3.79.0",
     "@payloadcms/richtext-lexical": "3.79.0",
     "cloudinary": "^2.9.0",
     "cross-env": "^7.0.3",
