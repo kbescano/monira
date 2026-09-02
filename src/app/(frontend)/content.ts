@@ -79,6 +79,7 @@ export const nav = {
   brand: 'Love Nira always',
   home: 'Home',
   memories: 'Memories',
+  letters: 'Letters',
 }
 
 export const memoriesPage = {
@@ -87,4 +88,11 @@ export const memoriesPage = {
   emptyTitle: 'Nothing here yet...',
   emptySubtitle:
     "The memory book is empty for now — add the first one from the admin dashboard and it'll show up right here.",
+}
+
+export const lettersPage = {
+  title: 'Love Letters',
+  subtitle: 'Little notes, written and kept, whenever there was something to say.',
+  emptyTitle: 'No letters yet',
+  emptySubtitle: 'Tap the + and write the first one.',
 }

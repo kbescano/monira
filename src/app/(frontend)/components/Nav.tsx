@@ -7,6 +7,7 @@ import { nav } from '../content'
 const links = [
   { href: '/', label: nav.home },
   { href: '/memories', label: nav.memories },
+  { href: '/letters', label: nav.letters },
 ]
 
 export default function Nav() {

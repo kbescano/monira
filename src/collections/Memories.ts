@@ -15,7 +15,9 @@ export const Memories: CollectionConfig = {
   access: {
     // Public read — this is what powers the Memories grid on the site.
     read: () => true,
-    create: ({ req }) => Boolean(req.user),
+    // Public create — anyone with the link can add a memory from /memories.
+    // Editing/removing existing ones stays admin-only.
+    create: () => true,
     update: ({ req }) => Boolean(req.user),
     delete: ({ req }) => Boolean(req.user),
   },

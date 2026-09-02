@@ -25,7 +25,9 @@ export const Media: CollectionConfig = {
   access: {
     // Public read so the site can render photos for both of you.
     read: () => true,
-    create: ({ req }) => Boolean(req.user),
+    // Public create — anyone with the link can contribute a photo from /memories.
+    // Editing/removing existing ones stays admin-only.
+    create: () => true,
     update: ({ req }) => Boolean(req.user),
     delete: ({ req }) => Boolean(req.user),
   },

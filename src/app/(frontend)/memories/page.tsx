@@ -1,5 +1,6 @@
 import { getPayloadClient } from '@/lib/payload'
 import MemoriesGallery, { type MemoryItem } from '../components/MemoriesGallery'
+import UploadMemory from '../components/UploadMemory'
 import { memoriesPage } from '../content'
 
 export const dynamic = 'force-dynamic'
@@ -81,6 +82,8 @@ export default async function MemoriesPage() {
       ) : (
         <MemoriesGallery memories={memories} />
       )}
+
+      <UploadMemory />
     </div>
   )
 }

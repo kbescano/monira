@@ -70,6 +70,7 @@ export interface Config {
     users: User;
     media: Media;
     memories: Memory;
+    'love-letters': LoveLetter;
     'payload-kv': PayloadKv;
     'payload-locked-documents': PayloadLockedDocument;
     'payload-preferences': PayloadPreference;
@@ -80,6 +81,7 @@ export interface Config {
     users: UsersSelect<false> | UsersSelect<true>;
     media: MediaSelect<false> | MediaSelect<true>;
     memories: MemoriesSelect<false> | MemoriesSelect<true>;
+    'love-letters': LoveLettersSelect<false> | LoveLettersSelect<true>;
     'payload-kv': PayloadKvSelect<false> | PayloadKvSelect<true>;
     'payload-locked-documents': PayloadLockedDocumentsSelect<false> | PayloadLockedDocumentsSelect<true>;
     'payload-preferences': PayloadPreferencesSelect<false> | PayloadPreferencesSelect<true>;
@@ -270,6 +272,25 @@ export interface Memory {
   createdAt: string;
 }
 /**
+ * Every letter here shows up on the Letters feed, newest first.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "love-letters".
+ */
+export interface LoveLetter {
+  id: number;
+  /**
+   * Who this letter is for.
+   */
+  to: 'Ken' | 'Nira';
+  /**
+   * The letter itself.
+   */
+  message: string;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "payload-kv".
  */
@@ -304,6 +325,10 @@ export interface PayloadLockedDocument {
     | ({
         relationTo: 'memories';
         value: number | Memory;
+      } | null)
+    | ({
+        relationTo: 'love-letters';
+        value: number | LoveLetter;
       } | null);
   globalSlug?: string | null;
   user: {
@@ -438,6 +463,16 @@ export interface MemoriesSelect<T extends boolean = true> {
   description?: T;
   image?: T;
   memoryDate?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "love-letters_select".
+ */
+export interface LoveLettersSelect<T extends boolean = true> {
+  to?: T;
+  message?: T;
   updatedAt?: T;
   createdAt?: T;
 }
