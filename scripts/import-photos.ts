@@ -16,11 +16,41 @@
 import 'dotenv/config'
 import fs from 'fs'
 import path from 'path'
+import sharp from 'sharp'
 import { getPayload } from 'payload'
 import config from '../src/payload.config'
 
 const IMG_PATTERN = /^IMG_(\d{4})(\d{2})(\d{2})_(\d{2})(\d{2})(\d{2})/i
 const VALID_EXT = new Set(['.jpg', '.jpeg', '.png', '.webp', '.heic', '.gif'])
+
+// This Cloudinary account rejects uploads over ~1 MiB with a misleading
+// "Upload preset must be specified when using unsigned upload" error (confirmed
+// by testing — re-encoding the same file smaller made the identical signed
+// request succeed). Stay comfortably under that by re-compressing anything
+// bigger, stepping quality down until it fits.
+const MAX_UPLOAD_BYTES = 950_000
+
+async function shrinkToFit(buffer: Buffer, mimetype: string): Promise<Buffer> {
+  if (buffer.length <= MAX_UPLOAD_BYTES || mimetype !== 'image/jpeg') return buffer
+
+  let quality = 85
+  let out = buffer
+  while (quality >= 40) {
+    out = await sharp(buffer).jpeg({ quality }).toBuffer()
+    if (out.length <= MAX_UPLOAD_BYTES) return out
+    quality -= 15
+  }
+
+  // Quality alone wasn't enough (common for very high-resolution originals,
+  // e.g. 3024x4032 full-res phone photos) — fall back to downscaling too.
+  let width = 1800
+  while (width >= 800) {
+    out = await sharp(buffer).resize({ width, withoutEnlargement: true }).jpeg({ quality: 78 }).toBuffer()
+    if (out.length <= MAX_UPLOAD_BYTES) return out
+    width -= 400
+  }
+  return out
+}
 
 function mimeFor(ext: string) {
   switch (ext) {
@@ -81,8 +111,13 @@ async function main() {
   let created = 0
   for (const filename of files) {
     const filePath = path.join(dir, filename)
-    const buffer = fs.readFileSync(filePath)
+    const original = fs.readFileSync(filePath)
     const ext = path.extname(filename).toLowerCase()
+    const mimetype = mimeFor(ext)
+    const buffer = await shrinkToFit(original, mimetype)
+    if (buffer.length !== original.length) {
+      console.log(`  (shrunk ${filename}: ${original.length} -> ${buffer.length} bytes)`)
+    }
     const { date, title } = dateAndTitleFor(filename)
 
     try {
@@ -91,7 +126,7 @@ async function main() {
         data: { alt: `Us — ${title}` },
         file: {
           data: buffer,
-          mimetype: mimeFor(ext),
+          mimetype,
           name: filename,
           size: buffer.length,
         },
