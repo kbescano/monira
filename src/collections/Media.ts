@@ -40,5 +40,26 @@ export const Media: CollectionConfig = {
         description: 'Short description for accessibility (e.g. "Us at the beach, 2024").',
       },
     },
+    {
+      // Read-only pointer at the old Cloudinary URL — this isn't the active
+      // storage adapter anymore (that's R2 now), but the column still holds
+      // real data for every photo uploaded before the move, and the frontend
+      // reads this first before falling back to the R2-backed `url` field.
+      // Without declaring it here, Payload won't return the column at all,
+      // even though it's still sitting in the DB.
+      name: 'cloudinary',
+      type: 'group',
+      admin: {
+        position: 'sidebar',
+        description: 'Legacy Cloudinary reference for photos uploaded before the move to R2.',
+      },
+      fields: [
+        {
+          name: 'secure_url',
+          type: 'text',
+          admin: { readOnly: true },
+        },
+      ],
+    },
   ],
 }

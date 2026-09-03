@@ -2,6 +2,7 @@ import { getPayloadClient } from '@/lib/payload'
 import { getCurrentUser } from '@/lib/session'
 import { otherPerson } from '@/lib/dailyPassword'
 import WriteLoveLetter from '../components/WriteLoveLetter'
+import LetterCard from './LetterCard'
 import { lettersPage } from '../content'
 
 export const dynamic = 'force-dynamic'
@@ -39,18 +40,6 @@ async function getLetters(): Promise<{ letters: Letter[]; failed: boolean }> {
   }
 }
 
-function formatDate(value: string) {
-  try {
-    return new Date(value).toLocaleDateString(undefined, {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
-    })
-  } catch {
-    return ''
-  }
-}
-
 export default async function LettersPage() {
   const [{ letters, failed }, currentUser] = await Promise.all([getLetters(), getCurrentUser()])
   const defaultTo = currentUser ? otherPerson(currentUser) : 'Nira'
@@ -82,25 +71,7 @@ export default async function LettersPage() {
       ) : (
         <div className="mx-auto flex max-w-xl flex-col gap-4 px-4 pb-28 pt-2 sm:px-6">
           {letters.map((letter) => (
-            <article
-              key={letter.id}
-              className={`rounded-3xl border px-6 py-6 shadow-sm sm:px-8 sm:py-8 ${
-                letter.pinned
-                  ? 'border-rose/30 bg-white shadow-rose/10'
-                  : 'border-rose/15 bg-white/70 shadow-rose/5'
-              }`}
-            >
-              <div className="mb-3 flex items-center justify-between">
-                <span className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-widest text-rose">
-                  {letter.pinned && <span aria-label="Pinned">📌</span>}
-                  To {letter.to}
-                </span>
-                <span className="text-xs text-plum/40">{formatDate(letter.createdAt)}</span>
-              </div>
-              <p className="whitespace-pre-line font-serif text-[17px] leading-relaxed text-plum/85">
-                {letter.message}
-              </p>
-            </article>
+            <LetterCard key={letter.id} letter={letter} currentUser={currentUser} />
           ))}
         </div>
       )}
