@@ -7,29 +7,37 @@ import { revealVideo, burnVideo } from './actions'
 import type { Person } from '@/lib/dailyPassword'
 
 type State = 'idle' | 'checking' | 'blocked' | 'playing' | 'gone'
+type Kind = 'video' | 'photo'
+
+const MAX_LOOPS = 5
+// How long a photo stays on screen before it auto-closes — there's no
+// natural "ended" event for a still image, so this stands in for one.
+const PHOTO_DISPLAY_MS = 5_000
 
 export default function WatchVideoClient({
   id,
   exists,
   uploadedBy,
   currentUser,
+  kind,
 }: {
   id: string
   exists: boolean
   uploadedBy: Person | null
   currentUser: Person | null
+  kind: Kind
 }) {
   const router = useRouter()
   const videoRef = useRef<HTMLVideoElement>(null)
   const burnedRef = useRef(false)
   const loopCountRef = useRef(0)
-
-  const MAX_LOOPS = 5
+  const photoTimerRef = useRef<ReturnType<typeof setInterval> | null>(null)
 
   const [state, setState] = useState<State>(exists ? 'idle' : 'gone')
   const [url, setUrl] = useState<string | null>(null)
   const [caption, setCaption] = useState<string | null>(null)
   const [isSender, setIsSender] = useState(false)
+  const [revealedKind, setRevealedKind] = useState<Kind>(kind)
   const [progress, setProgress] = useState(0) // 0..1
 
   const reveal = async () => {
@@ -46,6 +54,7 @@ export default function WatchVideoClient({
     setUrl(result.url)
     setCaption(result.caption)
     setIsSender(Boolean(result.isSender))
+    setRevealedKind(result.kind ?? kind)
     setState('playing')
   }
 
@@ -54,13 +63,13 @@ export default function WatchVideoClient({
   // it tied closely to the "Tap to watch" click that led here, which is what
   // lets browsers allow unmuted autoplay in the first place.
   useEffect(() => {
-    if (state === 'playing') {
+    if (state === 'playing' && revealedKind === 'video') {
       videoRef.current?.play().catch(() => {
         // Autoplay blocked by the browser — the native controls still let
         // them press play manually, so this is a silent fallback.
       })
     }
-  }, [state])
+  }, [state, revealedKind])
 
   const leave = () => router.push('/videos')
 
@@ -70,9 +79,10 @@ export default function WatchVideoClient({
     setProgress(v.currentTime / v.duration)
   }
 
-  // The actual "view" moment — fires once the browser has genuinely started
-  // rendering frames (not just fetched metadata), so this is the safe point
-  // to delete the source. Guarded so a seek/rebuffer replay doesn't re-fire it.
+  // The actual "view" moment for a video — fires once the browser has
+  // genuinely started rendering frames (not just fetched metadata), so this
+  // is the safe point to delete the source. Guarded so a seek/rebuffer
+  // replay doesn't re-fire it.
   const handlePlaying = () => {
     if (burnedRef.current) return
     burnedRef.current = true
@@ -93,13 +103,38 @@ export default function WatchVideoClient({
     v.play().catch(() => {})
   }
 
+  // The photo equivalent of "playing": fires once the <img> has genuinely
+  // finished loading, then counts a display timer up to auto-close — the
+  // still-image stand-in for a video's loop-then-end.
+  const handlePhotoLoad = () => {
+    if (burnedRef.current) return
+    burnedRef.current = true
+    burnVideo(id)
+
+    const startedAt = Date.now()
+    photoTimerRef.current = setInterval(() => {
+      const elapsed = Date.now() - startedAt
+      setProgress(Math.min(elapsed / PHOTO_DISPLAY_MS, 1))
+      if (elapsed >= PHOTO_DISPLAY_MS) {
+        if (photoTimerRef.current) clearInterval(photoTimerRef.current)
+        leave()
+      }
+    }, 40)
+  }
+
+  useEffect(() => {
+    return () => {
+      if (photoTimerRef.current) clearInterval(photoTimerRef.current)
+    }
+  }, [])
+
   if (state === 'gone') {
     return (
       <div className="flex min-h-screen flex-col items-center justify-center gap-3 bg-gradient-to-b from-blush via-cream to-cream px-6 text-center">
         <span className="text-4xl">👻</span>
         <h1 className="font-serif text-xl text-berry">This one&apos;s already been watched</h1>
         <p className="max-w-sm text-sm text-plum/60">
-          Vanishing videos only play once — looks like this one is gone for good.
+          Vanishing videos and photos only show once — looks like this one is gone for good.
         </p>
       </div>
     )
@@ -140,44 +175,51 @@ export default function WatchVideoClient({
           </p>
         )}
 
-        <video
-          ref={videoRef}
-          src={url}
-          controls
-          autoPlay
-          playsInline
-          onTimeUpdate={handleTimeUpdate}
-          onPlaying={handlePlaying}
-          onEnded={handleEnded}
-          className="h-full w-full object-contain"
-        />
+        {revealedKind === 'photo' ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={url} alt="" onLoad={handlePhotoLoad} className="h-full w-full object-contain" />
+        ) : (
+          <video
+            ref={videoRef}
+            src={url}
+            controls
+            autoPlay
+            playsInline
+            onTimeUpdate={handleTimeUpdate}
+            onPlaying={handlePlaying}
+            onEnded={handleEnded}
+            className="h-full w-full object-contain"
+          />
+        )}
 
         <p className="absolute inset-x-0 bottom-3 z-10 text-center text-xs text-white/50">
           {isSender
-            ? "You sent this — it'll disappear once they watch it."
-            : "This is gone now — it won't play again."}
+            ? "You sent this — it'll disappear once they see it."
+            : "This is gone now — it won't show again."}
         </p>
       </div>
     )
   }
 
+  const kindLabel = kind === 'photo' ? 'photo' : 'video'
   const heading =
     uploadedBy && currentUser && uploadedBy === currentUser
-      ? 'You sent a video'
+      ? `You sent a ${kindLabel}`
       : uploadedBy
-        ? `${uploadedBy} sent you a video`
-        : 'Someone sent you a video'
+        ? `${uploadedBy} sent you a ${kindLabel}`
+        : `Someone sent you a ${kindLabel}`
 
   return (
     <div className="flex min-h-screen flex-col items-center justify-center gap-4 bg-gradient-to-b from-blush via-cream to-cream px-6 text-center">
-      <span className="text-4xl">🎬</span>
+      <span className="text-4xl">{kind === 'photo' ? '📷' : '🎬'}</span>
       <h1 className="font-serif text-xl text-berry">{heading}</h1>
+      <p className="max-w-sm text-sm text-plum/60">This shows once, then it&apos;s gone. Ready?</p>
       <button
         onClick={reveal}
         disabled={state === 'checking'}
         className="tap-shrink rounded-full bg-rose px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-rose/30 transition hover:bg-berry disabled:opacity-60"
       >
-        {state === 'checking' ? 'Loading…' : 'Tap to watch'}
+        {state === 'checking' ? 'Loading…' : kind === 'photo' ? 'Tap to view' : 'Tap to watch'}
       </button>
     </div>
   )

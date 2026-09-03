@@ -8,12 +8,16 @@ import type { Person } from '@/lib/dailyPassword'
 const MAX_MS = 10_000
 const RADIUS = 36
 const CIRCUMFERENCE = 2 * Math.PI * RADIUS
+// A quick tap releases before this — anything held longer starts recording.
+const HOLD_THRESHOLD_MS = 220
 // A soft guard for picked-from-library files — not a verified Cloudinary
 // limit for video (that finding was specific to images on this account).
 const MAX_BYTES = 100 * 1024 * 1024
 
 type Status = 'idle' | 'uploading' | 'error'
 type Mode = 'camera' | 'preview'
+type Kind = 'video' | 'photo'
+type Facing = 'user' | 'environment'
 
 function pickMimeType(): string | undefined {
   if (typeof MediaRecorder === 'undefined' || !MediaRecorder.isTypeSupported) return undefined
@@ -51,13 +55,17 @@ export default function UploadVideo({ currentUser }: { currentUser: Person | nul
   const chunksRef = useRef<Blob[]>([])
   const startedAtRef = useRef<number>(0)
   const tickRef = useRef<ReturnType<typeof setInterval> | null>(null)
+  const pressTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const holdingRef = useRef(false)
 
   const [open, setOpen] = useState(false)
   const [mode, setMode] = useState<Mode>('camera')
+  const [facing, setFacing] = useState<Facing>('user')
   const [cameraError, setCameraError] = useState(false)
   const [cameraReady, setCameraReady] = useState(false)
   const [recording, setRecording] = useState(false)
   const [progress, setProgress] = useState(0) // 0..1
+  const [kind, setKind] = useState<Kind>('video')
   const [file, setFile] = useState<File | Blob | null>(null)
   const [previewUrl, setPreviewUrl] = useState<string | null>(null)
   const [caption, setCaption] = useState('')
@@ -69,12 +77,13 @@ export default function UploadVideo({ currentUser }: { currentUser: Person | nul
     streamRef.current = null
   }
 
-  const startCamera = async () => {
+  const startCamera = async (facingMode: Facing = facing) => {
     setCameraError(false)
     setCameraReady(false)
+    stopStream()
     try {
       const stream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: 'user' },
+        video: { facingMode },
         audio: true,
       })
       streamRef.current = stream
@@ -85,24 +94,33 @@ export default function UploadVideo({ currentUser }: { currentUser: Person | nul
     }
   }
 
+  const flipCamera = () => {
+    const next: Facing = facing === 'user' ? 'environment' : 'user'
+    setFacing(next)
+    startCamera(next)
+  }
+
   useEffect(() => {
     if (open && mode === 'camera') startCamera()
     return () => {
       if (tickRef.current) clearInterval(tickRef.current)
+      if (pressTimerRef.current) clearTimeout(pressTimerRef.current)
       stopStream()
-      window.removeEventListener('mouseup', finishRecording)
-      window.removeEventListener('touchend', finishRecording)
-      window.removeEventListener('touchcancel', finishRecording)
+      window.removeEventListener('mouseup', handlePressEnd)
+      window.removeEventListener('touchend', handlePressEnd)
+      window.removeEventListener('touchcancel', handlePressEnd)
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, mode])
 
   const reset = () => {
     setMode('camera')
+    setFacing('user')
     setCameraError(false)
     setCameraReady(false)
     setRecording(false)
     setProgress(0)
+    setKind('video')
     setFile(null)
     if (previewUrl) URL.revokeObjectURL(previewUrl)
     setPreviewUrl(null)
@@ -120,36 +138,11 @@ export default function UploadVideo({ currentUser }: { currentUser: Person | nul
     reset()
   }
 
-  const finishRecording = () => {
-    if (tickRef.current) clearInterval(tickRef.current)
-    tickRef.current = null
-    if (recorderRef.current && recorderRef.current.state !== 'inactive') {
-      recorderRef.current.stop()
-    }
-    setRecording(false)
-    window.removeEventListener('mouseup', finishRecording)
-    window.removeEventListener('touchend', finishRecording)
-    window.removeEventListener('touchcancel', finishRecording)
-  }
-
   const startRecording = () => {
     const stream = streamRef.current
-    if (!stream) {
-      // Camera isn't ready yet (still requesting permission/initializing) —
-      // surface this instead of silently doing nothing on press.
-      setError('Camera is still starting up — try again in a second.')
-      return
-    }
+    if (!stream) return
     setError(null)
     chunksRef.current = []
-
-    // Belt-and-suspenders: if the finger/cursor drifts off the button before
-    // release, onMouseUp/onTouchEnd bound only to the button can miss firing
-    // (mouseup targets whatever's under the cursor at release time). These
-    // window-level listeners guarantee "release anywhere" still stops it.
-    window.addEventListener('mouseup', finishRecording)
-    window.addEventListener('touchend', finishRecording)
-    window.addEventListener('touchcancel', finishRecording)
 
     const mimeType = pickMimeType()
     const recorder = new MediaRecorder(stream, mimeType ? { mimeType } : undefined)
@@ -161,6 +154,7 @@ export default function UploadVideo({ currentUser }: { currentUser: Person | nul
       stopStream()
       setFile(blob)
       setPreviewUrl(URL.createObjectURL(blob))
+      setKind('video')
       setMode('preview')
     }
 
@@ -177,26 +171,109 @@ export default function UploadVideo({ currentUser }: { currentUser: Person | nul
     }, 40)
   }
 
+  const finishRecording = () => {
+    if (tickRef.current) clearInterval(tickRef.current)
+    tickRef.current = null
+    if (recorderRef.current && recorderRef.current.state !== 'inactive') {
+      recorderRef.current.stop()
+    }
+    setRecording(false)
+  }
+
+  // Grabs a still frame straight off the live camera stream — mirrored for
+  // the front camera to match what was actually on screen, natural for the
+  // back one, just like a real camera app.
+  const capturePhoto = () => {
+    const video = liveVideoRef.current
+    if (!video || video.videoWidth === 0) return
+    const canvas = document.createElement('canvas')
+    canvas.width = video.videoWidth
+    canvas.height = video.videoHeight
+    const ctx = canvas.getContext('2d')
+    if (!ctx) return
+    if (facing === 'user') {
+      ctx.translate(canvas.width, 0)
+      ctx.scale(-1, 1)
+    }
+    ctx.drawImage(video, 0, 0, canvas.width, canvas.height)
+    canvas.toBlob(
+      (blob) => {
+        if (!blob) return
+        stopStream()
+        setFile(blob)
+        setPreviewUrl(URL.createObjectURL(blob))
+        setKind('photo')
+        setMode('preview')
+      },
+      'image/jpeg',
+      0.9,
+    )
+  }
+
+  // Instagram-style shutter: a quick tap takes a photo, holding past the
+  // threshold starts recording. Both paths release through the same
+  // window-level listener so a finger/cursor drifting off the button before
+  // release still ends things correctly ("release anywhere").
+  const handlePressStart = (e: React.MouseEvent | React.TouchEvent) => {
+    if ('touches' in e) e.preventDefault()
+    if (!streamRef.current) {
+      setError('Camera is still starting up — try again in a second.')
+      return
+    }
+    setError(null)
+    holdingRef.current = false
+    pressTimerRef.current = setTimeout(() => {
+      holdingRef.current = true
+      startRecording()
+    }, HOLD_THRESHOLD_MS)
+
+    window.addEventListener('mouseup', handlePressEnd)
+    window.addEventListener('touchend', handlePressEnd)
+    window.addEventListener('touchcancel', handlePressEnd)
+  }
+
+  const handlePressEnd = () => {
+    window.removeEventListener('mouseup', handlePressEnd)
+    window.removeEventListener('touchend', handlePressEnd)
+    window.removeEventListener('touchcancel', handlePressEnd)
+    if (pressTimerRef.current) {
+      clearTimeout(pressTimerRef.current)
+      pressTimerRef.current = null
+    }
+    if (holdingRef.current) {
+      finishRecording()
+    } else if (streamRef.current) {
+      capturePhoto()
+    }
+    holdingRef.current = false
+  }
+
   const handlePickFile = async (f: File | null) => {
     if (!f) return
     setError(null)
-    if (f.size > MAX_BYTES) {
-      setError('That video is a bit too big (100MB max) — try a shorter clip.')
-      return
-    }
-    try {
-      const duration = await readDuration(f)
-      if (duration > 10.5) {
-        setError('Videos must be 10 seconds or under — trim it first.')
+    const isImage = f.type.startsWith('image/')
+
+    if (!isImage) {
+      if (f.size > MAX_BYTES) {
+        setError('That video is a bit too big (100MB max) — try a shorter clip.')
         return
       }
-    } catch {
-      // If duration can't be read, let the upload attempt happen anyway
-      // rather than blocking on a browser quirk.
+      try {
+        const duration = await readDuration(f)
+        if (duration > 10.5) {
+          setError('Videos must be 10 seconds or under — trim it first.')
+          return
+        }
+      } catch {
+        // If duration can't be read, let the upload attempt happen anyway
+        // rather than blocking on a browser quirk.
+      }
     }
+
     stopStream()
     setFile(f)
     setPreviewUrl(URL.createObjectURL(f))
+    setKind(isImage ? 'photo' : 'video')
     setMode('preview')
   }
 
@@ -212,7 +289,7 @@ export default function UploadVideo({ currentUser }: { currentUser: Person | nul
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!file) {
-      setError('Record or choose a video first.')
+      setError('Take a photo or record a video first.')
       return
     }
     setError(null)
@@ -220,15 +297,16 @@ export default function UploadVideo({ currentUser }: { currentUser: Person | nul
 
     try {
       const form = new FormData()
-      const filename = file instanceof File ? file.name : `clip-${Date.now()}.webm`
+      const filename =
+        file instanceof File ? file.name : `${kind}-${Date.now()}.${kind === 'photo' ? 'jpg' : 'webm'}`
       form.append('file', file, filename)
       form.append(
         '_payload',
-        JSON.stringify({ caption: caption.trim() || undefined, uploadedBy: currentUser ?? undefined }),
+        JSON.stringify({ kind, caption: caption.trim() || undefined, uploadedBy: currentUser ?? undefined }),
       )
 
       const res = await fetch('/api/videos', { method: 'POST', body: form })
-      if (!res.ok) throw new Error('Upload failed. Try a smaller or different video?')
+      if (!res.ok) throw new Error('Upload failed. Try again?')
 
       setOpen(false)
       reset()
@@ -246,7 +324,7 @@ export default function UploadVideo({ currentUser }: { currentUser: Person | nul
     <>
       <button
         onClick={() => setOpen(true)}
-        aria-label="Send a vanishing video"
+        aria-label="Send a vanishing photo or video"
         className="tap-shrink fixed bottom-20 right-6 z-50 flex h-14 w-14 items-center justify-center rounded-full bg-rose text-white shadow-lg shadow-rose/30 transition hover:scale-105 hover:bg-berry active:scale-95 sm:bottom-8 sm:right-8"
       >
         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true">
@@ -272,7 +350,7 @@ export default function UploadVideo({ currentUser }: { currentUser: Person | nul
               className="flex max-h-[92vh] w-full max-w-md flex-col overflow-y-auto rounded-t-3xl bg-plum sm:rounded-3xl"
             >
               <div className="sticky top-0 z-10 flex items-center justify-between bg-plum px-5 pt-4">
-                <h2 className="font-serif text-lg text-cream">Send a vanishing video</h2>
+                <h2 className="font-serif text-lg text-cream">Send something that vanishes</h2>
                 <button
                   onClick={close}
                   aria-label="Close"
@@ -288,7 +366,7 @@ export default function UploadVideo({ currentUser }: { currentUser: Person | nul
                   <div className="relative mx-auto flex aspect-[3/4] h-[36vh] max-w-full items-center justify-center overflow-hidden rounded-2xl bg-black">
                     {cameraError ? (
                       <span className="px-6 text-center text-sm text-cream/60">
-                        Couldn&apos;t access the camera. You can still choose a video below.
+                        Couldn&apos;t access the camera. You can still choose a photo or video below.
                       </span>
                     ) : (
                       <video
@@ -296,23 +374,56 @@ export default function UploadVideo({ currentUser }: { currentUser: Person | nul
                         autoPlay
                         muted
                         playsInline
-                        className="h-full w-full scale-x-[-1] object-cover"
+                        className={`h-full w-full object-cover ${facing === 'user' ? 'scale-x-[-1]' : ''}`}
                       />
+                    )}
+
+                    {!cameraError && cameraReady && (
+                      <button
+                        type="button"
+                        onClick={flipCamera}
+                        aria-label="Flip camera"
+                        className="absolute right-3 top-3 flex h-9 w-9 items-center justify-center rounded-full bg-black/40 text-white backdrop-blur-sm transition hover:bg-black/60"
+                      >
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                          <path
+                            d="M4 7h3l1.5-2h7L17 7h3a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V8a1 1 0 0 1 1-1Z"
+                            stroke="currentColor"
+                            strokeWidth="1.6"
+                            strokeLinejoin="round"
+                          />
+                          <path
+                            d="M9 12.5a3 3 0 0 1 5.2-2M15 12.5a3 3 0 0 1-5.2 2"
+                            stroke="currentColor"
+                            strokeWidth="1.6"
+                            strokeLinecap="round"
+                          />
+                          <path
+                            d="M13.6 9.7 14.2 10.5 15.2 10"
+                            stroke="currentColor"
+                            strokeWidth="1.6"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                          />
+                          <path
+                            d="M10.4 15.3 9.8 14.5 8.8 15"
+                            stroke="currentColor"
+                            strokeWidth="1.6"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                          />
+                        </svg>
+                      </button>
                     )}
                   </div>
 
                   {!cameraError && (
                     <button
                       type="button"
-                      onMouseDown={startRecording}
-                      onMouseUp={finishRecording}
-                      onTouchStart={(e) => {
-                        e.preventDefault()
-                        startRecording()
-                      }}
-                      onTouchEnd={finishRecording}
+                      onMouseDown={handlePressStart}
+                      onTouchStart={handlePressStart}
                       disabled={!cameraReady}
-                      aria-label="Hold to record, up to 10 seconds"
+                      aria-label="Tap for a photo, hold to record a video (up to 10 seconds)"
                       className="relative flex h-20 w-20 items-center justify-center disabled:opacity-50"
                     >
                       <svg width="88" height="88" viewBox="0 0 88 88" className="absolute -rotate-90">
@@ -342,7 +453,7 @@ export default function UploadVideo({ currentUser }: { currentUser: Person | nul
                     {recording
                       ? 'Recording… release to stop'
                       : cameraReady
-                        ? 'Press and hold — up to 10 seconds'
+                        ? 'Tap for a photo · hold for a video, up to 10s'
                         : 'Starting camera…'}
                   </p>
 
@@ -356,7 +467,7 @@ export default function UploadVideo({ currentUser }: { currentUser: Person | nul
                   <input
                     ref={fileInputRef}
                     type="file"
-                    accept="video/*"
+                    accept="video/*,image/*"
                     className="hidden"
                     onChange={(e) => handlePickFile(e.target.files?.[0] ?? null)}
                   />
@@ -369,12 +480,17 @@ export default function UploadVideo({ currentUser }: { currentUser: Person | nul
               {mode === 'preview' && previewUrl && (
                 <form onSubmit={handleSubmit} className="flex flex-col gap-4 px-5 py-5">
                   <div className="mx-auto w-full max-w-xs overflow-hidden rounded-2xl bg-black">
-                    <video
-                      src={previewUrl}
-                      controls
-                      playsInline
-                      className="aspect-[3/4] w-full object-cover"
-                    />
+                    {kind === 'photo' ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img src={previewUrl} alt="Captured" className="aspect-[3/4] w-full object-cover" />
+                    ) : (
+                      <video
+                        src={previewUrl}
+                        controls
+                        playsInline
+                        className="aspect-[3/4] w-full object-cover"
+                      />
+                    )}
                   </div>
 
                   {error && <p className="text-sm text-rose">{error}</p>}

@@ -6,7 +6,12 @@ import VideoListItem from './VideoListItem'
 
 export const dynamic = 'force-dynamic'
 
-type PendingVideo = { id: string; caption: string | null; uploadedBy: string | null }
+type PendingVideo = {
+  id: string
+  caption: string | null
+  uploadedBy: string | null
+  kind: 'video' | 'photo'
+}
 
 async function getPendingVideos(): Promise<{ videos: PendingVideo[]; failed: boolean }> {
   try {
@@ -18,6 +23,7 @@ async function getPendingVideos(): Promise<{ videos: PendingVideo[]; failed: boo
         id: String(doc.id),
         caption: (doc.caption as string | undefined) || null,
         uploadedBy: (doc.uploadedBy as string | undefined) || null,
+        kind: doc.kind === 'photo' ? 'photo' : 'video',
       })),
       failed: false,
     }
@@ -46,7 +52,7 @@ export default async function VideosPage() {
             <p className="max-w-sm text-sm text-plum/60">
               {failed
                 ? 'The database might not be configured yet — double-check DATABASE_URI in your .env (see README).'
-                : 'Tap the + to record or upload one.'}
+                : 'Tap the + to send a photo or video.'}
             </p>
           </div>
         ) : (
@@ -57,6 +63,7 @@ export default async function VideosPage() {
                 id={video.id}
                 caption={video.caption}
                 mine={Boolean(currentUser && video.uploadedBy === currentUser)}
+                kind={video.kind}
               />
             ))}
           </div>

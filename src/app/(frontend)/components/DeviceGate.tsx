@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import { isMobileOrTablet } from './isMobileOrTablet'
 
-/** Hides its children on desktop — used to keep Vanishing Videos phone/iPad-only. */
+/** Hides its children on desktop — used to keep View Once (photos + videos) phone/iPad-only. */
 export default function DeviceGate({ children }: { children: React.ReactNode }) {
   const [eligible, setEligible] = useState<boolean | null>(null)
 
@@ -20,7 +20,7 @@ export default function DeviceGate({ children }: { children: React.ReactNode }) 
         <span className="text-4xl">📱</span>
         <h1 className="font-serif text-xl text-berry">Phone or tablet only</h1>
         <p className="max-w-sm text-sm text-plum/60">
-          Vanishing Videos only works on mobile or iPad — open this page there instead.
+          View Once only works on mobile or iPad — open this page there instead.
         </p>
       </div>
     )

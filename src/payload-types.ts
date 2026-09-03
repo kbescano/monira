@@ -324,13 +324,17 @@ export interface Reason {
   createdAt: string;
 }
 /**
- * Video messages that delete themselves — Cloudinary asset included — the moment someone opens the watch link. Once it's gone from here, it's gone.
+ * Video or photo messages that delete themselves — Cloudinary asset included — the moment someone opens the watch link. Once it's gone from here, it's gone.
  *
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "videos".
  */
 export interface Video {
   id: number;
+  /**
+   * A quick tap on the shutter sends a photo — press and hold sends a video.
+   */
+  kind: 'video' | 'photo';
   /**
    * Optional — shown on the /videos list before it's watched.
    */
@@ -648,6 +652,7 @@ export interface ReasonsSelect<T extends boolean = true> {
  * via the `definition` "videos_select".
  */
 export interface VideosSelect<T extends boolean = true> {
+  kind?: T;
   caption?: T;
   uploadedBy?: T;
   cloudinary?:

@@ -8,12 +8,12 @@ export const Videos: CollectionConfig = {
   },
   upload: {
     staticDir: 'public/videos',
-    mimeTypes: ['video/*'],
+    mimeTypes: ['video/*', 'image/*'],
   },
   admin: {
     useAsTitle: 'caption',
     description:
-      'Video messages that delete themselves — Cloudinary asset included — the moment someone opens the watch link. Once it\'s gone from here, it\'s gone.',
+      'Video or photo messages that delete themselves — Cloudinary asset included — the moment someone opens the watch link. Once it\'s gone from here, it\'s gone.',
   },
   defaultSort: '-createdAt',
   access: {
@@ -36,11 +36,12 @@ export const Videos: CollectionConfig = {
         const uploadedBy = doc.uploadedBy as string | undefined
         if (uploadedBy !== 'Ken' && uploadedBy !== 'Nira') return
         const forUser = uploadedBy === 'Ken' ? 'Nira' : 'Ken'
+        const kindLabel = doc.kind === 'photo' ? 'photo' : 'video'
         try {
           await req.payload.create({
             collection: 'notifications',
             data: {
-              message: `${uploadedBy} sent you a video`,
+              message: `${uploadedBy} sent you a ${kindLabel}`,
               forUser,
               link: `/videos/${doc.id}`,
               read: false,
@@ -53,6 +54,20 @@ export const Videos: CollectionConfig = {
     ],
   },
   fields: [
+    {
+      name: 'kind',
+      type: 'select',
+      required: true,
+      defaultValue: 'video',
+      options: [
+        { label: 'Video', value: 'video' },
+        { label: 'Photo', value: 'photo' },
+      ],
+      admin: {
+        position: 'sidebar',
+        description: 'A quick tap on the shutter sends a photo — press and hold sends a video.',
+      },
+    },
     {
       name: 'caption',
       type: 'text',

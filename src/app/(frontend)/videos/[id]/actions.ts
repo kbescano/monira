@@ -3,7 +3,12 @@
 import { getPayloadClient } from '@/lib/payload'
 import { getCurrentUser } from '@/lib/session'
 
-type RevealResult = { url: string | null; caption: string | null; isSender?: boolean }
+type RevealResult = {
+  url: string | null
+  caption: string | null
+  isSender?: boolean
+  kind?: 'video' | 'photo'
+}
 
 /**
  * Looks the video up and hands back its URL — does NOT delete anything.
@@ -23,11 +28,12 @@ export async function revealVideo(id: string): Promise<RevealResult> {
     const url = cloudinary.cloudinary?.secure_url || (doc.url as string | undefined) || null
     const caption = (doc.caption as string | undefined) || null
     const uploadedBy = doc.uploadedBy as string | undefined
+    const kind = doc.kind === 'photo' ? 'photo' : 'video'
 
     if (!url) return { url: null, caption: null }
 
     const isSender = Boolean(uploadedBy && currentUser && uploadedBy === currentUser)
-    return { url, caption, isSender }
+    return { url, caption, isSender, kind }
   } catch {
     return { url: null, caption: null }
   }
