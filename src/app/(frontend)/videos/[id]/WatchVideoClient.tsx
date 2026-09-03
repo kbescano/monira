@@ -9,7 +9,10 @@ import type { Person } from '@/lib/dailyPassword'
 type State = 'idle' | 'checking' | 'blocked' | 'playing' | 'gone'
 type Kind = 'video' | 'photo'
 
-const MAX_LOOPS = 5
+// Total watch time targeted across all loops — a short clip loops several
+// times (close to the old fixed 5x for ~10s clips), a full 60s recording
+// just plays once. Recomputed from the clip's real duration once known.
+const TARGET_TOTAL_MS = 40_000
 // How long a photo stays on screen before it auto-closes — there's no
 // natural "ended" event for a still image, so this stands in for one.
 const PHOTO_DISPLAY_MS = 5_000
@@ -89,11 +92,16 @@ export default function WatchVideoClient({
     burnVideo(id)
   }
 
-  // Loops the clip in place — up to MAX_LOOPS total plays — then auto-closes.
-  // The ✕ button still lets them close early at any point.
+  // Loops the clip in place, then auto-closes. How many times depends on its
+  // own length — short clips repeat a handful of times, a full 60s recording
+  // just plays once — capped at TARGET_TOTAL_MS of total watch time either
+  // way. The ✕ button still lets them close early at any point.
   const handleEnded = () => {
+    const duration = videoRef.current?.duration || 0
+    const maxLoops = duration > 0 ? Math.max(1, Math.round(TARGET_TOTAL_MS / (duration * 1000))) : 1
+
     loopCountRef.current += 1
-    if (loopCountRef.current >= MAX_LOOPS) {
+    if (loopCountRef.current >= maxLoops) {
       leave()
       return
     }

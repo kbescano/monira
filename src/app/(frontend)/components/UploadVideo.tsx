@@ -5,13 +5,13 @@ import { useRouter } from 'next/navigation'
 import { motion, AnimatePresence } from 'motion/react'
 import type { Person } from '@/lib/dailyPassword'
 
-const MAX_MS = 10_000
+const MAX_MS = 60_000
 const RADIUS = 36
 const CIRCUMFERENCE = 2 * Math.PI * RADIUS
 // A quick tap releases before this — anything held longer starts recording.
 const HOLD_THRESHOLD_MS = 220
-// A soft guard for picked-from-library files — not a verified Cloudinary
-// limit for video (that finding was specific to images on this account).
+// Applies to any final file — recorded, captured, or picked from the
+// library. It vanishes after one view anyway, so this is generous.
 const MAX_BYTES = 100 * 1024 * 1024
 
 type Status = 'idle' | 'uploading' | 'error'
@@ -260,8 +260,8 @@ export default function UploadVideo({ currentUser }: { currentUser: Person | nul
       }
       try {
         const duration = await readDuration(f)
-        if (duration > 10.5) {
-          setError('Videos must be 10 seconds or under — trim it first.')
+        if (duration > 60.5) {
+          setError('Videos must be 60 seconds or under — trim it first.')
           return
         }
       } catch {
@@ -292,14 +292,45 @@ export default function UploadVideo({ currentUser }: { currentUser: Person | nul
       setError('Take a photo or record a video first.')
       return
     }
+    if (file.size > MAX_BYTES) {
+      setError('That file is a bit too big (100MB max).')
+      return
+    }
     setError(null)
     setStatus('uploading')
 
     try {
-      const form = new FormData()
       const filename =
         file instanceof File ? file.name : `${kind}-${Date.now()}.${kind === 'photo' ? 'jpg' : 'webm'}`
-      form.append('file', file, filename)
+      const mimeType = file.type || (kind === 'photo' ? 'image/jpeg' : 'video/webm')
+
+      // Recordings can run up to 100MB — Vercel caps an incoming request
+      // body well under that, so the file goes straight from this browser
+      // to R2 with a presigned URL (bypassing that cap entirely), and only
+      // the small JSON needed to register the doc goes through /api/videos.
+      const presignRes = await fetch('/api/storage-s3-generate-signed-url', {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          collectionSlug: 'videos',
+          filename,
+          filesize: file.size,
+          mimeType,
+        }),
+      })
+      if (!presignRes.ok) throw new Error('Upload failed. Try again?')
+      const { url: uploadUrl } = (await presignRes.json()) as { url: string }
+
+      const putRes = await fetch(uploadUrl, {
+        method: 'PUT',
+        body: file,
+        headers: { 'Content-Type': mimeType },
+      })
+      if (!putRes.ok) throw new Error('Upload failed. Try again?')
+
+      const form = new FormData()
+      form.append('file', JSON.stringify({ collectionSlug: 'videos', filename, mimeType, size: file.size }))
       form.append(
         '_payload',
         JSON.stringify({ kind, caption: caption.trim() || undefined, uploadedBy: currentUser ?? undefined }),
@@ -423,7 +454,7 @@ export default function UploadVideo({ currentUser }: { currentUser: Person | nul
                       onMouseDown={handlePressStart}
                       onTouchStart={handlePressStart}
                       disabled={!cameraReady}
-                      aria-label="Tap for a photo, hold to record a video (up to 10 seconds)"
+                      aria-label="Tap for a photo, hold to record a video (up to 60 seconds)"
                       className="relative flex h-20 w-20 items-center justify-center disabled:opacity-50"
                     >
                       <svg width="88" height="88" viewBox="0 0 88 88" className="absolute -rotate-90">
@@ -453,7 +484,7 @@ export default function UploadVideo({ currentUser }: { currentUser: Person | nul
                     {recording
                       ? 'Recording… release to stop'
                       : cameraReady
-                        ? 'Tap for a photo · hold for a video, up to 10s'
+                        ? 'Tap for a photo · hold for a video, up to 60s'
                         : 'Starting camera…'}
                   </p>
 
