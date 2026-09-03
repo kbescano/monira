@@ -3,6 +3,7 @@ import { getCurrentUser } from '@/lib/session'
 import { otherPerson } from '@/lib/dailyPassword'
 import WriteLoveLetter from '../components/WriteLoveLetter'
 import LetterCard from './LetterCard'
+import PinnedLettersButton from './PinnedLettersButton'
 import { lettersPage } from '../content'
 
 export const dynamic = 'force-dynamic'
@@ -46,6 +47,7 @@ export default async function LettersPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-blush via-cream to-cream">
+      <PinnedLettersButton letters={letters} />
       <div className="px-4 pb-6 pt-10 text-center sm:px-6 sm:pt-14">
         <span className="text-xs font-medium uppercase tracking-widest text-rose">
           {letters.length > 0 ? `${letters.length} letters, kept` : 'The archive'}
