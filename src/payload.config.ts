@@ -35,24 +35,12 @@ export default buildConfig({
     pool: {
       connectionString: process.env.DATABASE_URI || '',
     },
-    // Removing the Cloudinary plugin left the old cloudinary_* columns
-    // orphaned in the DB. Dev-mode auto-push would want to drop them (it
-    // prompts interactively for that, which just hangs in a script) — leave
-    // push off so those columns quietly stay put, unused but intact, until
-    // there's a deliberate decision to clean them up.
-    push: false,
   }),
   plugins: [
     // Cloudflare R2 — S3-compatible, no built-in content moderation like
     // Cloudinary's. The bucket stays private; files are only ever reached
     // through this app's own authenticated API routes (no public bucket URL
     // configured below), same as local storage would behave.
-    //
-    // Existing photos already uploaded through the old Cloudinary plugin
-    // keep working exactly as before — their `cloudinary.secure_url` is
-    // stored as a plain string on each doc already, and the frontend reads
-    // that first (falling back to this adapter's `url` otherwise), so
-    // nothing needs migrating. Only new uploads go to R2 from here on.
     s3Storage({
       collections: {
         media: true,

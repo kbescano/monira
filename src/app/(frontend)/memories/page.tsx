@@ -25,15 +25,9 @@ async function getMemories(): Promise<{ memories: MemoryItem[]; failed: boolean 
           alt?: string | null
           width?: number | null
           height?: number | null
-          cloudinary?: { secure_url?: string | null } | null
         }
 
-        // payload-cloudinary uploads the file to Cloudinary but deliberately leaves
-        // the core `url` field pointing at Payload's local-storage route, which
-        // doesn't exist on a serverless host like Vercel. The real, working URL
-        // lives under `cloudinary.secure_url` — prefer that, and only fall back to
-        // `url` for a local dev setup that isn't using Cloudinary at all.
-        const imageUrl = image.cloudinary?.secure_url || image.url
+        const imageUrl = image.url
         if (!imageUrl) return null
 
         return {

@@ -162,12 +162,6 @@ export interface Media {
    * Short description for accessibility (e.g. "Us at the beach, 2024").
    */
   alt: string;
-  /**
-   * Legacy Cloudinary reference for photos uploaded before the move to R2.
-   */
-  cloudinary?: {
-    secure_url?: string | null;
-  };
   updatedAt: string;
   createdAt: string;
   url?: string | null;
@@ -443,11 +437,6 @@ export interface UsersSelect<T extends boolean = true> {
  */
 export interface MediaSelect<T extends boolean = true> {
   alt?: T;
-  cloudinary?:
-    | T
-    | {
-        secure_url?: T;
-      };
   updatedAt?: T;
   createdAt?: T;
   url?: T;

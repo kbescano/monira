@@ -14,8 +14,8 @@ type RevealResult = {
  * Looks the video up and hands back its URL — does NOT delete anything.
  * Deletion is a separate step (burnVideo, below), triggered by the client
  * only once the <video> has actually started playing. Deleting here instead
- * would destroy the Cloudinary asset before the browser had even fetched it,
- * turning the URL into a 404 the instant this function returns.
+ * would destroy the R2 asset before the browser had even fetched it, turning
+ * the URL into a 404 the instant this function returns.
  */
 export async function revealVideo(id: string): Promise<RevealResult> {
   try {
@@ -24,8 +24,7 @@ export async function revealVideo(id: string): Promise<RevealResult> {
     const doc = await payload.findByID({ collection: 'videos', id })
     if (!doc) return { url: null, caption: null }
 
-    const cloudinary = doc as { cloudinary?: { secure_url?: string | null } }
-    const url = cloudinary.cloudinary?.secure_url || (doc.url as string | undefined) || null
+    const url = (doc.url as string | undefined) || null
     const caption = (doc.caption as string | undefined) || null
     const uploadedBy = doc.uploadedBy as string | undefined
     const kind = doc.kind === 'photo' ? 'photo' : 'video'
@@ -41,8 +40,8 @@ export async function revealVideo(id: string): Promise<RevealResult> {
 
 /**
  * The actual "view" — call once the video has genuinely started playing.
- * Deletes the doc + Cloudinary asset for good. A no-op for the sender
- * previewing their own (they don't get to burn it just by watching).
+ * Deletes the doc + R2 asset for good. A no-op for the sender previewing
+ * their own (they don't get to burn it just by watching).
  */
 export async function burnVideo(id: string): Promise<void> {
   try {
