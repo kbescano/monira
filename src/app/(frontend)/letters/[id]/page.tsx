@@ -13,6 +13,7 @@ function toBubble(doc: Record<string, unknown>): Bubble {
     message: (doc.message as string | undefined) || null,
     voiceNoteUrl: (voiceNote && typeof voiceNote === 'object' && voiceNote.url) || null,
     heart: Boolean(doc.heart),
+    heartedBy: Array.isArray(doc.heartedBy) ? (doc.heartedBy as string[]) : [],
     createdAt: doc.createdAt as string,
   }
 }

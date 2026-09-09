@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import VoiceRecorderField from '../../components/VoiceRecorderField'
 import { uploadVoiceNote } from '../../lib/uploadVoiceNote'
+import { toggleHeart } from '../actions'
 import type { Person } from '@/lib/dailyPassword'
 
 export type Bubble = {
@@ -12,6 +13,7 @@ export type Bubble = {
   message: string | null
   voiceNoteUrl: string | null
   heart: boolean
+  heartedBy: string[]
   createdAt: string
 }
 
@@ -28,8 +30,36 @@ function formatTime(value: string) {
   }
 }
 
-function MessageBubble({ bubble, mine }: { bubble: Bubble; mine: boolean }) {
+function MessageBubble({
+  bubble,
+  mine,
+  currentUser,
+  onChanged,
+}: {
+  bubble: Bubble
+  mine: boolean
+  currentUser: Person | null
+  onChanged: () => void
+}) {
+  const [heartedBy, setHeartedBy] = useState(bubble.heartedBy)
+  const [busy, setBusy] = useState(false)
   const isBareHeart = bubble.heart && !bubble.message && !bubble.voiceNoteUrl
+  const iHearted = Boolean(currentUser && heartedBy.includes(currentUser))
+
+  const handleToggleHeart = async () => {
+    if (!currentUser || busy) return
+    const wasHearted = heartedBy.includes(currentUser)
+    setBusy(true)
+    setHeartedBy((prev) => (wasHearted ? prev.filter((p) => p !== currentUser) : [...prev, currentUser]))
+    const result = await toggleHeart(bubble.id)
+    if (result.ok) {
+      setHeartedBy(result.heartedBy)
+      onChanged()
+    } else {
+      setHeartedBy((prev) => (wasHearted ? [...prev, currentUser] : prev.filter((p) => p !== currentUser)))
+    }
+    setBusy(false)
+  }
 
   return (
     <div className={`flex flex-col ${mine ? 'items-end' : 'items-start'}`}>
@@ -53,7 +83,19 @@ function MessageBubble({ bubble, mine }: { bubble: Bubble; mine: boolean }) {
           )}
         </div>
       )}
-      <span className="mt-1 px-1 text-[11px] text-plum/40">{formatTime(bubble.createdAt)}</span>
+      <div className={`mt-1 flex items-center gap-1.5 px-1 ${mine ? 'flex-row-reverse' : ''}`}>
+        <span className="text-[11px] text-plum/40">{formatTime(bubble.createdAt)}</span>
+        <button
+          onClick={handleToggleHeart}
+          disabled={!currentUser || busy}
+          aria-label={iHearted ? 'Remove your heart' : 'Heart this message'}
+          aria-pressed={iHearted}
+          className="flex items-center gap-1 text-xs disabled:opacity-50"
+        >
+          <span>{iHearted ? '❤️' : '🤍'}</span>
+          {heartedBy.length > 0 && <span className="text-plum/50">{heartedBy.join(', ')}</span>}
+        </button>
+      </div>
     </div>
   )
 }
@@ -93,7 +135,7 @@ export default function ThreadView({
     return () => clearInterval(interval)
   }, [router])
 
-  const send = async (data: { message?: string; voiceNoteId?: string; heart?: boolean }) => {
+  const send = async (data: { message?: string; voiceNoteId?: string }) => {
     setError(null)
     setSending(true)
     try {
@@ -106,7 +148,6 @@ export default function ThreadView({
           replyTo: Number(rootId),
           message: data.message,
           voiceNote: data.voiceNoteId ? Number(data.voiceNoteId) : undefined,
-          heart: data.heart,
         }),
       })
       if (!res.ok) throw new Error('Could not send that. Please try again.')
@@ -131,11 +172,6 @@ export default function ThreadView({
       return
     }
     await send({ message: message.trim() || undefined, voiceNoteId: voiceNoteId ?? undefined })
-  }
-
-  const sendHeart = () => {
-    if (sending) return
-    send({ heart: true })
   }
 
   if (!root) {
@@ -181,7 +217,13 @@ export default function ThreadView({
 
       <div className="flex-1 space-y-4 overflow-y-auto px-4 py-5 sm:px-8">
         {bubbles.map((bubble) => (
-          <MessageBubble key={bubble.id} bubble={bubble} mine={Boolean(currentUser && bubble.from === currentUser)} />
+          <MessageBubble
+            key={bubble.id}
+            bubble={bubble}
+            mine={Boolean(currentUser && bubble.from === currentUser)}
+            currentUser={currentUser}
+            onChanged={() => router.refresh()}
+          />
         ))}
         <div ref={bottomRef} />
       </div>
@@ -248,15 +290,6 @@ export default function ThreadView({
               disabled={sending}
               className="max-h-32 flex-1 resize-none rounded-2xl border border-rose/20 bg-white px-4 py-2.5 text-[15px] leading-relaxed text-plum placeholder:text-plum/40 focus:border-rose/50 focus:outline-none disabled:opacity-50"
             />
-            <button
-              type="button"
-              onClick={sendHeart}
-              disabled={sending}
-              aria-label="Send a heart"
-              className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-full text-xl transition hover:scale-110 disabled:opacity-50"
-            >
-              ❤️
-            </button>
             <button
               type="submit"
               disabled={sending || !message.trim()}

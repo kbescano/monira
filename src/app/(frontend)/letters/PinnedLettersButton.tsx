@@ -9,7 +9,6 @@ type Letter = {
   to: string
   message: string | null
   voiceNoteUrl: string | null
-  heart: boolean
   createdAt: string
   pinned: boolean
 }
@@ -87,50 +86,41 @@ export default function PinnedLettersButton({ letters }: { letters: Letter[] }) 
 
               <div className="flex-1 overflow-y-auto px-6 py-5">
                 <div className="flex flex-col gap-4">
-                  {pinned.map((letter, i) => {
-                    const isBareHeart = letter.heart && !letter.message && !letter.voiceNoteUrl
-                    return (
-                      <motion.div
-                        key={letter.id}
-                        initial={{ opacity: 0, y: 14 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ duration: 0.3, delay: i * 0.06, ease: 'easeOut' }}
+                  {pinned.map((letter, i) => (
+                    <motion.div
+                      key={letter.id}
+                      initial={{ opacity: 0, y: 14 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ duration: 0.3, delay: i * 0.06, ease: 'easeOut' }}
+                    >
+                      <Link
+                        href={`/letters/${letter.id}`}
+                        onClick={() => setOpen(false)}
+                        className="block rounded-2xl border border-white/10 bg-white/5 px-5 py-4 transition hover:border-white/20 hover:bg-white/10"
                       >
-                        <Link
-                          href={`/letters/${letter.id}`}
-                          onClick={() => setOpen(false)}
-                          className="block rounded-2xl border border-white/10 bg-white/5 px-5 py-4 transition hover:border-white/20 hover:bg-white/10"
-                        >
-                          <div className="mb-2 flex items-center justify-between gap-3 text-xs font-semibold uppercase tracking-widest text-rose/90">
-                            <span className="flex items-center gap-1.5">
-                              <span aria-hidden="true">📌</span>
-                              To {letter.to}
-                            </span>
-                            <span className="flex-shrink-0 text-cream/40">{formatDate(letter.createdAt)}</span>
-                          </div>
-                          {isBareHeart ? (
-                            <p className="text-3xl">❤️</p>
-                          ) : (
-                            <>
-                              {letter.message && (
-                                <p className="whitespace-pre-line font-serif text-[15px] leading-relaxed text-cream/85">
-                                  {letter.message}
-                                </p>
-                              )}
-                              {letter.voiceNoteUrl && (
-                                <audio
-                                  src={letter.voiceNoteUrl}
-                                  controls
-                                  onClick={(e) => e.stopPropagation()}
-                                  className={`h-9 w-full ${letter.message ? 'mt-3' : ''}`}
-                                />
-                              )}
-                            </>
-                          )}
-                        </Link>
-                      </motion.div>
-                    )
-                  })}
+                        <div className="mb-2 flex items-center justify-between gap-3 text-xs font-semibold uppercase tracking-widest text-rose/90">
+                          <span className="flex items-center gap-1.5">
+                            <span aria-hidden="true">📌</span>
+                            To {letter.to}
+                          </span>
+                          <span className="flex-shrink-0 text-cream/40">{formatDate(letter.createdAt)}</span>
+                        </div>
+                        {letter.message && (
+                          <p className="whitespace-pre-line font-serif text-[15px] leading-relaxed text-cream/85">
+                            {letter.message}
+                          </p>
+                        )}
+                        {letter.voiceNoteUrl && (
+                          <audio
+                            src={letter.voiceNoteUrl}
+                            controls
+                            onClick={(e) => e.stopPropagation()}
+                            className={`h-9 w-full ${letter.message ? 'mt-3' : ''}`}
+                          />
+                        )}
+                      </Link>
+                    </motion.div>
+                  ))}
                 </div>
               </div>
             </motion.div>

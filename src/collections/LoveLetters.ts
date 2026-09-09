@@ -114,7 +114,21 @@ export const LoveLetters: CollectionConfig = {
       type: 'checkbox',
       defaultValue: false,
       admin: {
-        description: 'A quick ❤️ sent with no text or voice note attached.',
+        description:
+          'Legacy — a bare heart sent as its own reply. No longer created by the app (hearting is now a per-message reaction via heartedBy below), kept only so old heart-replies still render.',
+      },
+    },
+    {
+      name: 'heartedBy',
+      type: 'select',
+      hasMany: true,
+      options: [
+        { label: 'Ken', value: 'Ken' },
+        { label: 'Nira', value: 'Nira' },
+      ],
+      admin: {
+        description:
+          'Who has hearted this specific letter or reply — toggled from the ❤️ next to it. At most one entry per person.',
       },
     },
     {

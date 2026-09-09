@@ -247,9 +247,13 @@ export interface LoveLetter {
    */
   voiceNote?: (number | null) | VoiceNote;
   /**
-   * A quick ❤️ sent with no text or voice note attached.
+   * Legacy — a bare heart sent as its own reply. No longer created by the app (hearting is now a per-message reaction via heartedBy below), kept only so old heart-replies still render.
    */
   heart?: boolean | null;
+  /**
+   * Who has hearted this specific letter or reply — toggled from the ❤️ next to it. At most one entry per person.
+   */
+  heartedBy?: ('Ken' | 'Nira')[] | null;
   /**
    * Set only on replies — always points at the top-level letter that started the thread, so threads stay one level deep.
    */
@@ -538,6 +542,7 @@ export interface LoveLettersSelect<T extends boolean = true> {
   message?: T;
   voiceNote?: T;
   heart?: T;
+  heartedBy?: T;
   replyTo?: T;
   pinned?: T;
   updatedAt?: T;

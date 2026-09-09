@@ -3,19 +3,18 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { togglePin } from './actions'
-import { otherPerson, type Person } from '@/lib/dailyPassword'
+import { togglePin, toggleHeart } from './actions'
+import type { Person } from '@/lib/dailyPassword'
 
 type Letter = {
   id: string
   to: string
   message: string | null
   voiceNoteUrl: string | null
-  heart: boolean
   createdAt: string
   pinned: boolean
   replyCount: number
-  heartCount: number
+  heartedBy: string[]
 }
 
 function formatDate(value: string) {
@@ -40,8 +39,8 @@ export default function LetterCard({
   const router = useRouter()
   const [pinned, setPinned] = useState(letter.pinned)
   const [busy, setBusy] = useState(false)
-  const [heartCount, setHeartCount] = useState(letter.heartCount)
-  const [sendingHeart, setSendingHeart] = useState(false)
+  const [heartedBy, setHeartedBy] = useState(letter.heartedBy)
+  const [heartBusy, setHeartBusy] = useState(false)
 
   const handleTogglePin = async () => {
     if (!currentUser || busy) return
@@ -57,32 +56,24 @@ export default function LetterCard({
     setBusy(false)
   }
 
-  // A one-tap ❤️ reply, right from the feed — no need to open the thread.
-  const sendHeart = async () => {
-    if (!currentUser || sendingHeart) return
-    setSendingHeart(true)
-    setHeartCount((c) => c + 1) // optimistic
-    try {
-      const res = await fetch('/api/love-letters', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          to: otherPerson(currentUser),
-          from: currentUser,
-          heart: true,
-          replyTo: Number(letter.id),
-        }),
-      })
-      if (!res.ok) throw new Error()
+  // A one-tap ❤️ reaction on this letter itself — right from the feed, no
+  // need to open the thread. Toggling never creates a reply.
+  const handleToggleHeart = async () => {
+    if (!currentUser || heartBusy) return
+    const wasHearted = heartedBy.includes(currentUser)
+    setHeartBusy(true)
+    setHeartedBy((prev) => (wasHearted ? prev.filter((p) => p !== currentUser) : [...prev, currentUser]))
+    const result = await toggleHeart(letter.id)
+    if (result.ok) {
+      setHeartedBy(result.heartedBy)
       router.refresh()
-    } catch {
-      setHeartCount((c) => Math.max(0, c - 1))
-    } finally {
-      setSendingHeart(false)
+    } else {
+      setHeartedBy((prev) => (wasHearted ? [...prev, currentUser] : prev.filter((p) => p !== currentUser)))
     }
+    setHeartBusy(false)
   }
 
-  const isBareHeart = letter.heart && !letter.message && !letter.voiceNoteUrl
+  const iHearted = Boolean(currentUser && heartedBy.includes(currentUser))
 
   return (
     <article
@@ -122,23 +113,17 @@ export default function LetterCard({
         </div>
       </div>
 
-      {isBareHeart ? (
-        <p className="text-4xl">❤️</p>
-      ) : (
-        <>
-          {letter.message && (
-            <p className="whitespace-pre-line font-serif text-[17px] leading-relaxed text-plum/85">
-              {letter.message}
-            </p>
-          )}
-          {letter.voiceNoteUrl && (
-            <audio
-              src={letter.voiceNoteUrl}
-              controls
-              className={`h-10 w-full ${letter.message ? 'mt-4' : ''}`}
-            />
-          )}
-        </>
+      {letter.message && (
+        <p className="whitespace-pre-line font-serif text-[17px] leading-relaxed text-plum/85">
+          {letter.message}
+        </p>
+      )}
+      {letter.voiceNoteUrl && (
+        <audio
+          src={letter.voiceNoteUrl}
+          controls
+          className={`h-10 w-full ${letter.message ? 'mt-4' : ''}`}
+        />
       )}
 
       <div className="mt-4 flex items-center justify-between border-t border-rose/10 pt-3">
@@ -151,13 +136,14 @@ export default function LetterCard({
             : 'Reply →'}
         </Link>
         <button
-          onClick={sendHeart}
-          disabled={!currentUser || sendingHeart}
-          aria-label="Send a heart"
-          className="flex items-center gap-1 text-xs text-berry/70 transition hover:text-rose disabled:opacity-50"
+          onClick={handleToggleHeart}
+          disabled={!currentUser || heartBusy}
+          aria-label={iHearted ? 'Remove your heart' : 'Heart this letter'}
+          aria-pressed={iHearted}
+          className="flex items-center gap-1.5 text-xs text-berry/70 transition hover:text-rose disabled:opacity-50"
         >
-          <span>❤️</span>
-          {heartCount > 0 && <span>{heartCount}</span>}
+          <span>{iHearted ? '❤️' : '🤍'}</span>
+          {heartedBy.length > 0 && <span>{heartedBy.join(', ')}</span>}
         </button>
       </div>
     </article>

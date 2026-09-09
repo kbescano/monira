@@ -13,11 +13,10 @@ type Letter = {
   to: string
   message: string | null
   voiceNoteUrl: string | null
-  heart: boolean
   createdAt: string
   pinned: boolean
   replyCount: number
-  heartCount: number
+  heartedBy: string[]
 }
 
 async function getLetters(): Promise<{ letters: Letter[]; failed: boolean }> {
@@ -33,15 +32,15 @@ async function getLetters(): Promise<{ letters: Letter[]; failed: boolean }> {
     })
 
     // Only top-level letters (no replyTo) show up on the feed — replies live
-    // inside that letter's thread page instead.
+    // inside that letter's thread page instead. Reply counts still include
+    // any old heart-replies from before hearting became a per-message
+    // reaction — those rows still exist, just nothing new creates more of them.
     const replyCountByRoot = new Map<string, number>()
-    const heartCountByRoot = new Map<string, number>()
     for (const doc of docs) {
       const replyTo = doc.replyTo as { id: number | string } | number | string | null
       if (!replyTo) continue
       const rootId = String(typeof replyTo === 'object' ? replyTo.id : replyTo)
       replyCountByRoot.set(rootId, (replyCountByRoot.get(rootId) ?? 0) + 1)
-      if (doc.heart) heartCountByRoot.set(rootId, (heartCountByRoot.get(rootId) ?? 0) + 1)
     }
 
     // Newest-first, same as the query order — pinned letters no longer float
@@ -57,11 +56,10 @@ async function getLetters(): Promise<{ letters: Letter[]; failed: boolean }> {
         to: doc.to as string,
         message: (doc.message as string | undefined) || null,
         voiceNoteUrl: (voiceNote && typeof voiceNote === 'object' && voiceNote.url) || null,
-        heart: Boolean(doc.heart),
         createdAt: doc.createdAt as string,
         pinned: Boolean(doc.pinned),
         replyCount: replyCountByRoot.get(id) ?? 0,
-        heartCount: heartCountByRoot.get(id) ?? 0,
+        heartedBy: Array.isArray(doc.heartedBy) ? (doc.heartedBy as string[]) : [],
       }
     })
 
