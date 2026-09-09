@@ -21,9 +21,13 @@ export default function ReasonGenerator({ reasons }: { reasons: string[] }) {
   // but the whole set is always seen once before anything repeats.
   const bagRef = useRef<number[]>([])
 
-  if (reasons.length === 0) return null
-
   const showNext = () => {
+    // Nothing to draw from — either the reasons feature is toggled off (the
+    // page passes an empty array in that case) or the list is genuinely
+    // empty. Either way, tapping just quietly does nothing instead of the
+    // whole component disappearing.
+    if (reasons.length === 0) return
+
     if (bagRef.current.length === 0) {
       const bag = shuffled(reasons.length)
       // Don't let the new bag's first draw match what's on screen right now —
@@ -49,7 +53,7 @@ export default function ReasonGenerator({ reasons }: { reasons: string[] }) {
 
       <div className="min-h-[6rem] w-full max-w-md px-4">
         <AnimatePresence mode="wait">
-          {index !== null && (
+          {index !== null && reasons[index] && (
             <motion.p
               key={index}
               initial={{ opacity: 0, y: 12, scale: 0.96 }}

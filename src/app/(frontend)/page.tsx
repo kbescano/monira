@@ -61,15 +61,16 @@ export default async function HomePage() {
         {/* Days together counter */}
         <TogetherCounter />
 
-        {/* Reason generator */}
-        {showReasons && reasons.length > 0 && (
-          <div className="flex flex-col items-center gap-4 px-4 sm:px-0">
-            <h2 className="font-serif text-2xl text-berry sm:text-3xl">
-              In case you forgot why I&apos;m obsessed with you
-            </h2>
-            <ReasonGenerator reasons={reasons} />
-          </div>
-        )}
+        {/* Reason generator — heading and button always show; when the
+            toggle is off we just pass an empty list, so tapping quietly
+            shows nothing instead of the whole section disappearing. */}
+        <div className="flex flex-col items-center gap-4 px-4 sm:px-0">
+          <h2 className="font-serif text-2xl text-berry sm:text-3xl">
+            In case you forgot why I&apos;m obsessed with you
+          </h2>
+          <ReasonGenerator reasons={showReasons ? reasons : []} />
+        </div>
+
 
         {/* Quiz */}
         <div className="flex flex-col items-center gap-4 px-4 sm:px-0">
