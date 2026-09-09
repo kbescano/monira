@@ -36,6 +36,7 @@ export default function WatchVideoClient({
   const audioRef = useRef<HTMLAudioElement>(null)
   const burnedRef = useRef(false)
   const loopCountRef = useRef(0)
+  const loopStartedAtRef = useRef(0)
   const photoTimerRef = useRef<ReturnType<typeof setInterval> | null>(null)
 
   const [state, setState] = useState<State>(exists ? 'idle' : 'gone')
@@ -87,21 +88,31 @@ export default function WatchVideoClient({
   // The actual "view" moment for a video or voice message — fires once the
   // browser has genuinely started rendering/playing (not just fetched
   // metadata), so this is the safe point to delete the source. Guarded so a
-  // seek/rebuffer replay doesn't re-fire it.
+  // seek/rebuffer replay doesn't re-fire it. Also marks when this loop
+  // actually started playing, in wall-clock time.
   const handlePlaying = () => {
-    if (burnedRef.current) return
-    burnedRef.current = true
-    burnVideo(id)
+    if (!burnedRef.current) {
+      burnedRef.current = true
+      burnVideo(id)
+    }
+    loopStartedAtRef.current = Date.now()
   }
 
   // Loops the clip in place, then auto-closes. How many times depends on its
   // own length — short clips repeat a handful of times, a full 60s recording
   // just plays once — capped at TARGET_TOTAL_MS of total watch time either
   // way. The ✕ button still lets them close early at any point.
+  //
+  // MediaRecorder-produced files routinely carry a wrong `duration` in their
+  // container metadata (a 3s recording reporting 18s isn't unusual), and
+  // seeking to force a correction — the usual fix — would audibly interrupt
+  // playback here since this is mid-autoplay. Measuring how long the loop
+  // that just finished actually took (via the `playing` timestamp above)
+  // sidesteps the bad metadata entirely instead of trusting it.
   const handleEnded = (e: React.SyntheticEvent<HTMLVideoElement | HTMLAudioElement>) => {
     const el = e.currentTarget
-    const duration = el.duration || 0
-    const maxLoops = duration > 0 ? Math.max(1, Math.round(TARGET_TOTAL_MS / (duration * 1000))) : 1
+    const actualMs = loopStartedAtRef.current ? Date.now() - loopStartedAtRef.current : 0
+    const maxLoops = actualMs > 0 ? Math.max(1, Math.round(TARGET_TOTAL_MS / actualMs)) : 1
 
     loopCountRef.current += 1
     if (loopCountRef.current >= maxLoops) {

@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
+import VoiceNotePlayer from './VoiceNotePlayer'
 
 function pickAudioMimeType(): string | undefined {
   if (typeof MediaRecorder === 'undefined' || !MediaRecorder.isTypeSupported) return undefined
@@ -102,7 +103,7 @@ export default function VoiceRecorderField({
   if (blob && previewUrl) {
     return (
       <div className="flex items-center gap-3 rounded-xl border border-rose/20 bg-white px-4 py-3">
-        <audio src={previewUrl} controls className="h-9 flex-1" />
+        <VoiceNotePlayer src={previewUrl} className="h-9 flex-1" />
         <button
           type="button"
           onClick={discard}

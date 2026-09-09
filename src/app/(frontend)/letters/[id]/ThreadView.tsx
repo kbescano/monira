@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import VoiceRecorderField from '../../components/VoiceRecorderField'
+import VoiceNotePlayer from '../../components/VoiceNotePlayer'
 import { uploadVoiceNote } from '../../lib/uploadVoiceNote'
 import { toggleHeart } from '../actions'
 import type { Person } from '@/lib/dailyPassword'
@@ -75,9 +76,8 @@ function MessageBubble({
             <p className="whitespace-pre-line text-[15px] leading-relaxed">{bubble.message}</p>
           )}
           {bubble.voiceNoteUrl && (
-            <audio
+            <VoiceNotePlayer
               src={bubble.voiceNoteUrl}
-              controls
               className={`h-9 w-56 max-w-full ${bubble.message ? 'mt-2' : ''}`}
             />
           )}

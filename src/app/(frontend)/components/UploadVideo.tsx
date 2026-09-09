@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { motion, AnimatePresence } from 'motion/react'
 import VoiceRecorderField from './VoiceRecorderField'
+import VoiceNotePlayer from './VoiceNotePlayer'
 import type { Person } from '@/lib/dailyPassword'
 
 const MAX_MS = 60_000
@@ -578,7 +579,7 @@ export default function UploadVideo({ currentUser }: { currentUser: Person | nul
                     ) : kind === 'voice' ? (
                       <div className="flex aspect-[3/4] flex-col items-center justify-center gap-4">
                         <span className="text-5xl">🎙️</span>
-                        <audio src={previewUrl} controls className="w-full max-w-[85%]" />
+                        <VoiceNotePlayer src={previewUrl} className="w-full max-w-[85%]" />
                       </div>
                     ) : (
                       <video

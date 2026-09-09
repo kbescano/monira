@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import { motion, AnimatePresence } from 'motion/react'
+import VoiceNotePlayer from '../components/VoiceNotePlayer'
 
 type Letter = {
   id: string
@@ -111,9 +112,8 @@ export default function PinnedLettersButton({ letters }: { letters: Letter[] }) 
                           </p>
                         )}
                         {letter.voiceNoteUrl && (
-                          <audio
+                          <VoiceNotePlayer
                             src={letter.voiceNoteUrl}
-                            controls
                             onClick={(e) => e.stopPropagation()}
                             className={`h-9 w-full ${letter.message ? 'mt-3' : ''}`}
                           />

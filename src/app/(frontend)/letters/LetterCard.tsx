@@ -4,6 +4,7 @@ import { useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { togglePin, toggleHeart } from './actions'
+import VoiceNotePlayer from '../components/VoiceNotePlayer'
 import type { Person } from '@/lib/dailyPassword'
 
 type Letter = {
@@ -119,9 +120,8 @@ export default function LetterCard({
         </p>
       )}
       {letter.voiceNoteUrl && (
-        <audio
+        <VoiceNotePlayer
           src={letter.voiceNoteUrl}
-          controls
           className={`h-10 w-full ${letter.message ? 'mt-4' : ''}`}
         />
       )}
