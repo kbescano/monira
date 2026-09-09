@@ -12,6 +12,7 @@ import { Memories } from './collections/Memories'
 import { LoveLetters } from './collections/LoveLetters'
 import { Reasons } from './collections/Reasons'
 import { Videos } from './collections/Videos'
+import { VoiceNotes } from './collections/VoiceNotes'
 import { Notifications } from './collections/Notifications'
 
 const filename = fileURLToPath(import.meta.url)
@@ -25,7 +26,7 @@ export default buildConfig({
     },
   },
   sharp,
-  collections: [Users, Media, Memories, LoveLetters, Reasons, Videos, Notifications],
+  collections: [Users, Media, Memories, LoveLetters, Reasons, Videos, VoiceNotes, Notifications],
   editor: lexicalEditor({}),
   secret: process.env.PAYLOAD_SECRET || '',
   typescript: {
@@ -56,17 +57,18 @@ export default buildConfig({
         forcePathStyle: true,
       },
     }),
-    // Videos gets its own instance with clientUploads on: recordings can run
-    // up to 100MB, and Vercel serverless functions cap an incoming request
-    // body around 4.5MB regardless of anything configured here. clientUploads
-    // has the browser PUT the file straight to R2 with a presigned URL —
-    // bypassing that cap entirely — then hands Payload just the small JSON
-    // needed to register the doc. `access: () => true` matches this
-    // collection's own public-create policy (already gated by the site-wide
-    // login at the middleware level).
+    // Videos and voice notes share an instance with clientUploads on:
+    // recordings have no size cap, and Vercel serverless functions cap an
+    // incoming request body around 4.5MB regardless of anything configured
+    // here. clientUploads has the browser PUT the file straight to R2 with a
+    // presigned URL — bypassing that cap entirely — then hands Payload just
+    // the small JSON needed to register the doc. `access: () => true`
+    // matches both collections' own public-create policy (already gated by
+    // the site-wide login at the middleware level).
     s3Storage({
       collections: {
         videos: true,
+        'voice-notes': true,
       },
       bucket: process.env.R2_BUCKET || '',
       config: {

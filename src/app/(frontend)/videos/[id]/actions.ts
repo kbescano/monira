@@ -7,7 +7,7 @@ type RevealResult = {
   url: string | null
   caption: string | null
   isSender?: boolean
-  kind?: 'video' | 'photo'
+  kind?: 'video' | 'photo' | 'voice'
 }
 
 /**
@@ -24,10 +24,17 @@ export async function revealVideo(id: string): Promise<RevealResult> {
     const doc = await payload.findByID({ collection: 'videos', id })
     if (!doc) return { url: null, caption: null }
 
+    // A saved item is only ever reachable by whoever saved it — this is the
+    // enforcement point that actually matters (the page-level check just
+    // controls what gets shown; this is what stops the file from leaking to
+    // the wrong person even via a stale link or a direct call).
+    const savedBy = doc.savedBy as string | undefined
+    if (savedBy && savedBy !== currentUser) return { url: null, caption: null }
+
     const url = (doc.url as string | undefined) || null
     const caption = (doc.caption as string | undefined) || null
     const uploadedBy = doc.uploadedBy as string | undefined
-    const kind = doc.kind === 'photo' ? 'photo' : 'video'
+    const kind = doc.kind === 'photo' ? 'photo' : doc.kind === 'voice' ? 'voice' : 'video'
 
     if (!url) return { url: null, caption: null }
 
@@ -49,6 +56,9 @@ export async function burnVideo(id: string): Promise<void> {
     const currentUser = await getCurrentUser()
     const doc = await payload.findByID({ collection: 'videos', id })
     if (!doc) return
+
+    // Saved items are permanently exempt — that's the whole point of saving one.
+    if (doc.savedBy) return
 
     const uploadedBy = doc.uploadedBy as string | undefined
     const isSender = Boolean(uploadedBy && currentUser && uploadedBy === currentUser)

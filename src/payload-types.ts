@@ -73,6 +73,7 @@ export interface Config {
     'love-letters': LoveLetter;
     reasons: Reason;
     videos: Video;
+    'voice-notes': VoiceNote;
     notifications: Notification;
     'payload-kv': PayloadKv;
     'payload-locked-documents': PayloadLockedDocument;
@@ -87,6 +88,7 @@ export interface Config {
     'love-letters': LoveLettersSelect<false> | LoveLettersSelect<true>;
     reasons: ReasonsSelect<false> | ReasonsSelect<true>;
     videos: VideosSelect<false> | VideosSelect<true>;
+    'voice-notes': VoiceNotesSelect<false> | VoiceNotesSelect<true>;
     notifications: NotificationsSelect<false> | NotificationsSelect<true>;
     'payload-kv': PayloadKvSelect<false> | PayloadKvSelect<true>;
     'payload-locked-documents': PayloadLockedDocumentsSelect<false> | PayloadLockedDocumentsSelect<true>;
@@ -221,7 +223,7 @@ export interface Memory {
   createdAt: string;
 }
 /**
- * Every letter here shows up on the Letters feed — pinned ones float to the top.
+ * Every top-level letter here shows up on the Letters feed — pinned ones float to the top. Replies (replyTo set) show up inside that letter's thread instead.
  *
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "love-letters".
@@ -237,15 +239,47 @@ export interface LoveLetter {
    */
   from?: ('Ken' | 'Nira') | null;
   /**
-   * The letter itself.
+   * The letter itself. Optional if a voice note or heart is attached.
    */
-  message: string;
+  message?: string | null;
+  /**
+   * Optional spoken letter — no length or size limit.
+   */
+  voiceNote?: (number | null) | VoiceNote;
+  /**
+   * A quick ❤️ sent with no text or voice note attached.
+   */
+  heart?: boolean | null;
+  /**
+   * Set only on replies — always points at the top-level letter that started the thread, so threads stay one level deep.
+   */
+  replyTo?: (number | null) | LoveLetter;
   /**
    * Pin this letter to the top of the feed.
    */
   pinned?: boolean | null;
   updatedAt: string;
   createdAt: string;
+}
+/**
+ * Voice recordings attached to letters. No length or size limit — clientUploads sends these straight to R2.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "voice-notes".
+ */
+export interface VoiceNote {
+  id: number;
+  updatedAt: string;
+  createdAt: string;
+  url?: string | null;
+  thumbnailURL?: string | null;
+  filename?: string | null;
+  mimeType?: string | null;
+  filesize?: number | null;
+  width?: number | null;
+  height?: number | null;
+  focalX?: number | null;
+  focalY?: number | null;
 }
 /**
  * Powers the "why I love you" button on the Home page — shuffles through these at random.
@@ -263,7 +297,7 @@ export interface Reason {
   createdAt: string;
 }
 /**
- * Video or photo messages that delete themselves — Cloudinary asset included — the moment someone opens the watch link. Once it's gone from here, it's gone.
+ * Video, photo, or voice messages that delete themselves — R2 asset included — the moment someone opens the watch link. Once it's gone from here, it's gone.
  *
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "videos".
@@ -271,9 +305,9 @@ export interface Reason {
 export interface Video {
   id: number;
   /**
-   * A quick tap on the shutter sends a photo — press and hold sends a video.
+   * A quick tap on the shutter sends a photo — press and hold sends a video. Voice messages come from the separate mic tab.
    */
-  kind: 'video' | 'photo';
+  kind: 'video' | 'photo' | 'voice';
   /**
    * Optional — shown on the /videos list before it's watched.
    */
@@ -282,6 +316,10 @@ export interface Video {
    * Who sent it. The watch page only burns it when the *other* person opens it — the sender can preview their own without spending it.
    */
   uploadedBy?: ('Ken' | 'Nira') | null;
+  /**
+   * If set, this item is exempt from burning and only visible to this person.
+   */
+  savedBy?: ('Ken' | 'Nira') | null;
   updatedAt: string;
   createdAt: string;
   url?: string | null;
@@ -362,6 +400,10 @@ export interface PayloadLockedDocument {
     | ({
         relationTo: 'videos';
         value: number | Video;
+      } | null)
+    | ({
+        relationTo: 'voice-notes';
+        value: number | VoiceNote;
       } | null)
     | ({
         relationTo: 'notifications';
@@ -494,6 +536,9 @@ export interface LoveLettersSelect<T extends boolean = true> {
   to?: T;
   from?: T;
   message?: T;
+  voiceNote?: T;
+  heart?: T;
+  replyTo?: T;
   pinned?: T;
   updatedAt?: T;
   createdAt?: T;
@@ -515,6 +560,24 @@ export interface VideosSelect<T extends boolean = true> {
   kind?: T;
   caption?: T;
   uploadedBy?: T;
+  savedBy?: T;
+  updatedAt?: T;
+  createdAt?: T;
+  url?: T;
+  thumbnailURL?: T;
+  filename?: T;
+  mimeType?: T;
+  filesize?: T;
+  width?: T;
+  height?: T;
+  focalX?: T;
+  focalY?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "voice-notes_select".
+ */
+export interface VoiceNotesSelect<T extends boolean = true> {
   updatedAt?: T;
   createdAt?: T;
   url?: T;

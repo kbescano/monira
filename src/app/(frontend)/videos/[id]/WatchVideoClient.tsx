@@ -7,11 +7,12 @@ import { revealVideo, burnVideo } from './actions'
 import type { Person } from '@/lib/dailyPassword'
 
 type State = 'idle' | 'checking' | 'blocked' | 'playing' | 'gone'
-type Kind = 'video' | 'photo'
+type Kind = 'video' | 'photo' | 'voice'
 
 // Total watch time targeted across all loops — a short clip loops several
 // times (close to the old fixed 5x for ~10s clips), a full 60s recording
 // just plays once. Recomputed from the clip's real duration once known.
+// Applies to both video and voice — both are just HTMLMediaElement under the hood.
 const TARGET_TOTAL_MS = 40_000
 // How long a photo stays on screen before it auto-closes — there's no
 // natural "ended" event for a still image, so this stands in for one.
@@ -32,6 +33,7 @@ export default function WatchVideoClient({
 }) {
   const router = useRouter()
   const videoRef = useRef<HTMLVideoElement>(null)
+  const audioRef = useRef<HTMLAudioElement>(null)
   const burnedRef = useRef(false)
   const loopCountRef = useRef(0)
   const photoTimerRef = useRef<ReturnType<typeof setInterval> | null>(null)
@@ -61,31 +63,31 @@ export default function WatchVideoClient({
     setState('playing')
   }
 
-  // Fires the moment the <video> mounts for the 'playing' state. Calling
-  // play() here (rather than relying only on the autoPlay attribute) keeps
-  // it tied closely to the "Tap to watch" click that led here, which is what
-  // lets browsers allow unmuted autoplay in the first place.
+  // Fires the moment the <video>/<audio> mounts for the 'playing' state.
+  // Calling play() here (rather than relying only on the autoPlay attribute)
+  // keeps it tied closely to the "Tap to watch" click that led here, which is
+  // what lets browsers allow unmuted autoplay in the first place.
   useEffect(() => {
-    if (state === 'playing' && revealedKind === 'video') {
-      videoRef.current?.play().catch(() => {
-        // Autoplay blocked by the browser — the native controls still let
-        // them press play manually, so this is a silent fallback.
-      })
+    if (state !== 'playing') return
+    if (revealedKind === 'video') {
+      videoRef.current?.play().catch(() => {})
+    } else if (revealedKind === 'voice') {
+      audioRef.current?.play().catch(() => {})
     }
   }, [state, revealedKind])
 
   const leave = () => router.push('/videos')
 
-  const handleTimeUpdate = () => {
-    const v = videoRef.current
-    if (!v || !v.duration) return
-    setProgress(v.currentTime / v.duration)
+  const handleTimeUpdate = (e: React.SyntheticEvent<HTMLVideoElement | HTMLAudioElement>) => {
+    const el = e.currentTarget
+    if (!el.duration) return
+    setProgress(el.currentTime / el.duration)
   }
 
-  // The actual "view" moment for a video — fires once the browser has
-  // genuinely started rendering frames (not just fetched metadata), so this
-  // is the safe point to delete the source. Guarded so a seek/rebuffer
-  // replay doesn't re-fire it.
+  // The actual "view" moment for a video or voice message — fires once the
+  // browser has genuinely started rendering/playing (not just fetched
+  // metadata), so this is the safe point to delete the source. Guarded so a
+  // seek/rebuffer replay doesn't re-fire it.
   const handlePlaying = () => {
     if (burnedRef.current) return
     burnedRef.current = true
@@ -96,8 +98,9 @@ export default function WatchVideoClient({
   // own length — short clips repeat a handful of times, a full 60s recording
   // just plays once — capped at TARGET_TOTAL_MS of total watch time either
   // way. The ✕ button still lets them close early at any point.
-  const handleEnded = () => {
-    const duration = videoRef.current?.duration || 0
+  const handleEnded = (e: React.SyntheticEvent<HTMLVideoElement | HTMLAudioElement>) => {
+    const el = e.currentTarget
+    const duration = el.duration || 0
     const maxLoops = duration > 0 ? Math.max(1, Math.round(TARGET_TOTAL_MS / (duration * 1000))) : 1
 
     loopCountRef.current += 1
@@ -105,10 +108,8 @@ export default function WatchVideoClient({
       leave()
       return
     }
-    const v = videoRef.current
-    if (!v) return
-    v.currentTime = 0
-    v.play().catch(() => {})
+    el.currentTime = 0
+    el.play().catch(() => {})
   }
 
   // The photo equivalent of "playing": fires once the <img> has genuinely
@@ -142,7 +143,7 @@ export default function WatchVideoClient({
         <span className="text-4xl">👻</span>
         <h1 className="font-serif text-xl text-berry">This one&apos;s already been watched</h1>
         <p className="max-w-sm text-sm text-plum/60">
-          Vanishing videos and photos only show once — looks like this one is gone for good.
+          Vanishing messages only show once — looks like this one is gone for good.
         </p>
       </div>
     )
@@ -185,14 +186,40 @@ export default function WatchVideoClient({
 
         {revealedKind === 'photo' ? (
           // eslint-disable-next-line @next/next/no-img-element
-          <img src={url} alt="" onLoad={handlePhotoLoad} className="h-full w-full object-contain" />
+          <img
+            src={url}
+            alt=""
+            onLoad={handlePhotoLoad}
+            onContextMenu={(e) => e.preventDefault()}
+            draggable={false}
+            className="h-full w-full object-contain"
+          />
+        ) : revealedKind === 'voice' ? (
+          <div className="flex h-full w-full flex-col items-center justify-center gap-6 px-10">
+            <span className="text-6xl">🎙️</span>
+            <audio
+              ref={audioRef}
+              src={url}
+              controls
+              controlsList="nodownload noplaybackrate"
+              autoPlay
+              onContextMenu={(e) => e.preventDefault()}
+              onTimeUpdate={handleTimeUpdate}
+              onPlaying={handlePlaying}
+              onEnded={handleEnded}
+              className="w-full max-w-xs"
+            />
+          </div>
         ) : (
           <video
             ref={videoRef}
             src={url}
             controls
+            controlsList="nodownload noplaybackrate"
+            disablePictureInPicture
             autoPlay
             playsInline
+            onContextMenu={(e) => e.preventDefault()}
             onTimeUpdate={handleTimeUpdate}
             onPlaying={handlePlaying}
             onEnded={handleEnded}
@@ -209,7 +236,7 @@ export default function WatchVideoClient({
     )
   }
 
-  const kindLabel = kind === 'photo' ? 'photo' : 'video'
+  const kindLabel = kind === 'photo' ? 'photo' : kind === 'voice' ? 'voice message' : 'video'
   const heading =
     uploadedBy && currentUser && uploadedBy === currentUser
       ? `You sent a ${kindLabel}`
@@ -219,7 +246,7 @@ export default function WatchVideoClient({
 
   return (
     <div className="flex min-h-screen flex-col items-center justify-center gap-4 bg-gradient-to-b from-blush via-cream to-cream px-6 text-center">
-      <span className="text-4xl">{kind === 'photo' ? '📷' : '🎬'}</span>
+      <span className="text-4xl">{kind === 'photo' ? '📷' : kind === 'voice' ? '🎙️' : '🎬'}</span>
       <h1 className="font-serif text-xl text-berry">{heading}</h1>
       <p className="max-w-sm text-sm text-plum/60">This shows once, then it&apos;s gone. Ready?</p>
       <button
@@ -227,7 +254,7 @@ export default function WatchVideoClient({
         disabled={state === 'checking'}
         className="tap-shrink rounded-full bg-rose px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-rose/30 transition hover:bg-berry disabled:opacity-60"
       >
-        {state === 'checking' ? 'Loading…' : kind === 'photo' ? 'Tap to view' : 'Tap to watch'}
+        {state === 'checking' ? 'Loading…' : kind === 'photo' ? 'Tap to view' : kind === 'voice' ? 'Tap to listen' : 'Tap to watch'}
       </button>
     </div>
   )

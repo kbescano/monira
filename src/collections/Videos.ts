@@ -8,12 +8,12 @@ export const Videos: CollectionConfig = {
   },
   upload: {
     staticDir: 'public/videos',
-    mimeTypes: ['video/*', 'image/*'],
+    mimeTypes: ['video/*', 'image/*', 'audio/*'],
   },
   admin: {
     useAsTitle: 'caption',
     description:
-      'Video or photo messages that delete themselves — Cloudinary asset included — the moment someone opens the watch link. Once it\'s gone from here, it\'s gone.',
+      'Video, photo, or voice messages that delete themselves — R2 asset included — the moment someone opens the watch link. Once it\'s gone from here, it\'s gone.',
   },
   defaultSort: '-createdAt',
   access: {
@@ -36,7 +36,7 @@ export const Videos: CollectionConfig = {
         const uploadedBy = doc.uploadedBy as string | undefined
         if (uploadedBy !== 'Ken' && uploadedBy !== 'Nira') return
         const forUser = uploadedBy === 'Ken' ? 'Nira' : 'Ken'
-        const kindLabel = doc.kind === 'photo' ? 'photo' : 'video'
+        const kindLabel = doc.kind === 'photo' ? 'photo' : doc.kind === 'voice' ? 'voice message' : 'video'
         try {
           await req.payload.create({
             collection: 'notifications',
@@ -62,10 +62,11 @@ export const Videos: CollectionConfig = {
       options: [
         { label: 'Video', value: 'video' },
         { label: 'Photo', value: 'photo' },
+        { label: 'Voice', value: 'voice' },
       ],
       admin: {
         position: 'sidebar',
-        description: 'A quick tap on the shutter sends a photo — press and hold sends a video.',
+        description: 'A quick tap on the shutter sends a photo — press and hold sends a video. Voice messages come from the separate mic tab.',
       },
     },
     {
@@ -86,6 +87,22 @@ export const Videos: CollectionConfig = {
         position: 'sidebar',
         description:
           'Who sent it. The watch page only burns it when the *other* person opens it — the sender can preview their own without spending it.',
+      },
+    },
+    {
+      // Undocumented on purpose — only Ken's own UI ever surfaces a way to
+      // set this (server-enforced too, not just hidden client-side). Once
+      // set, the feed query and the watch page both exclude it for anyone
+      // else, and burnVideo refuses to ever delete it.
+      name: 'savedBy',
+      type: 'select',
+      options: [
+        { label: 'Ken', value: 'Ken' },
+        { label: 'Nira', value: 'Nira' },
+      ],
+      admin: {
+        position: 'sidebar',
+        description: 'If set, this item is exempt from burning and only visible to this person.',
       },
     },
   ],

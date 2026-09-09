@@ -11,9 +11,13 @@ export const dynamic = 'force-dynamic'
 type Letter = {
   id: string
   to: string
-  message: string
+  message: string | null
+  voiceNoteUrl: string | null
+  heart: boolean
   createdAt: string
   pinned: boolean
+  replyCount: number
+  heartCount: number
 }
 
 async function getLetters(): Promise<{ letters: Letter[]; failed: boolean }> {
@@ -21,18 +25,47 @@ async function getLetters(): Promise<{ letters: Letter[]; failed: boolean }> {
     const payload = await getPayloadClient()
     const { docs } = await payload.find({
       collection: 'love-letters',
-      // Pinned letters float to the top, newest-first within each group.
-      sort: '-pinned,-createdAt',
-      limit: 200,
+      // depth: 1 resolves voiceNote to its file (need the url) and replyTo to
+      // its parent — fetched in one shot rather than a query per thread.
+      depth: 1,
+      sort: '-createdAt',
+      limit: 500,
     })
 
-    const letters = docs.map((doc) => ({
-      id: String(doc.id),
-      to: doc.to as string,
-      message: doc.message as string,
-      createdAt: doc.createdAt as string,
-      pinned: Boolean(doc.pinned),
-    }))
+    // Only top-level letters (no replyTo) show up on the feed — replies live
+    // inside that letter's thread page instead.
+    const replyCountByRoot = new Map<string, number>()
+    const heartCountByRoot = new Map<string, number>()
+    for (const doc of docs) {
+      const replyTo = doc.replyTo as { id: number | string } | number | string | null
+      if (!replyTo) continue
+      const rootId = String(typeof replyTo === 'object' ? replyTo.id : replyTo)
+      replyCountByRoot.set(rootId, (replyCountByRoot.get(rootId) ?? 0) + 1)
+      if (doc.heart) heartCountByRoot.set(rootId, (heartCountByRoot.get(rootId) ?? 0) + 1)
+    }
+
+    const roots = docs.filter((doc) => !doc.replyTo)
+    // Pinned float to the top, newest-first within each group.
+    roots.sort((a, b) => {
+      if (Boolean(a.pinned) !== Boolean(b.pinned)) return a.pinned ? -1 : 1
+      return new Date(b.createdAt as string).getTime() - new Date(a.createdAt as string).getTime()
+    })
+
+    const letters = roots.map((doc) => {
+      const voiceNote = doc.voiceNote as { url?: string | null } | number | null
+      const id = String(doc.id)
+      return {
+        id,
+        to: doc.to as string,
+        message: (doc.message as string | undefined) || null,
+        voiceNoteUrl: (voiceNote && typeof voiceNote === 'object' && voiceNote.url) || null,
+        heart: Boolean(doc.heart),
+        createdAt: doc.createdAt as string,
+        pinned: Boolean(doc.pinned),
+        replyCount: replyCountByRoot.get(id) ?? 0,
+        heartCount: heartCountByRoot.get(id) ?? 0,
+      }
+    })
 
     return { letters, failed: false }
   } catch (error) {
@@ -50,7 +83,7 @@ export default async function LettersPage() {
       <PinnedLettersButton letters={letters} />
       <div className="px-4 pb-6 pt-10 text-center sm:px-6 sm:pt-14">
         <span className="text-xs font-medium uppercase tracking-widest text-rose">
-          {letters.length > 0 ? `${letters.length} letters, kept` : 'The archive'}
+          {letters.length > 0 ? `${letters.length} threads, kept` : 'The archive'}
         </span>
         <h1 className="mt-2 font-script text-4xl text-berry sm:text-5xl">{lettersPage.title}</h1>
         <p className="mx-auto mt-2 max-w-sm text-sm text-plum/70 sm:text-base">

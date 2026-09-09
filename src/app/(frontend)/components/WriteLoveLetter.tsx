@@ -3,6 +3,8 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { motion, AnimatePresence } from 'motion/react'
+import VoiceRecorderField from './VoiceRecorderField'
+import { uploadVoiceNote } from '../lib/uploadVoiceNote'
 import type { Person } from '@/lib/dailyPassword'
 
 export default function WriteLoveLetter({
@@ -19,11 +21,13 @@ export default function WriteLoveLetter({
   // picker needed, this can't be changed.
   const to = defaultTo
   const [message, setMessage] = useState('')
+  const [voiceBlob, setVoiceBlob] = useState<Blob | null>(null)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
   const reset = () => {
     setMessage('')
+    setVoiceBlob(null)
     setSaving(false)
     setError(null)
   }
@@ -36,18 +40,25 @@ export default function WriteLoveLetter({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!message.trim()) {
-      setError('Write something first.')
+    if (!message.trim() && !voiceBlob) {
+      setError('Write something or record a voice note first.')
       return
     }
     setError(null)
     setSaving(true)
 
     try {
+      const voiceNoteId = voiceBlob ? await uploadVoiceNote(voiceBlob) : undefined
+
       const res = await fetch('/api/love-letters', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ to, message: message.trim(), from: currentUser ?? undefined }),
+        body: JSON.stringify({
+          to,
+          message: message.trim() || undefined,
+          voiceNote: voiceNoteId ? Number(voiceNoteId) : undefined,
+          from: currentUser ?? undefined,
+        }),
       })
       if (!res.ok) throw new Error('Could not save the letter. Please try again.')
 
@@ -118,6 +129,13 @@ export default function WriteLoveLetter({
                   maxLength={4000}
                   className="resize-none rounded-xl border border-rose/20 bg-white px-4 py-3 font-serif text-[15px] leading-relaxed text-plum placeholder:font-sans placeholder:text-plum/40 focus:border-rose/50 focus:outline-none"
                 />
+
+                <div>
+                  <span className="mb-2 block text-xs font-medium uppercase tracking-widest text-rose">
+                    Or say it out loud
+                  </span>
+                  <VoiceRecorderField blob={voiceBlob} onRecorded={setVoiceBlob} disabled={saving} />
+                </div>
 
                 {error && <p className="text-sm text-berry">{error}</p>}
 

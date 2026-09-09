@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { motion, AnimatePresence } from 'motion/react'
+import VoiceRecorderField from './VoiceRecorderField'
 import type { Person } from '@/lib/dailyPassword'
 
 const MAX_MS = 60_000
@@ -15,8 +16,8 @@ const HOLD_THRESHOLD_MS = 220
 const MAX_BYTES = 100 * 1024 * 1024
 
 type Status = 'idle' | 'uploading' | 'error'
-type Mode = 'camera' | 'preview'
-type Kind = 'video' | 'photo'
+type Mode = 'camera' | 'voice' | 'preview'
+type Kind = 'video' | 'photo' | 'voice'
 type Facing = 'user' | 'environment'
 
 function pickMimeType(): string | undefined {
@@ -282,14 +283,28 @@ export default function UploadVideo({ currentUser }: { currentUser: Person | nul
     setPreviewUrl(null)
     setFile(null)
     setProgress(0)
-    setMode('camera')
-    startCamera()
+    if (kind === 'voice') {
+      setMode('voice')
+    } else {
+      setMode('camera')
+      startCamera()
+    }
+  }
+
+  // The recorder hands back a blob once recording stops — jump straight to
+  // the same preview/send screen photos and videos use.
+  const handleVoiceRecorded = (blob: Blob | null) => {
+    if (!blob) return
+    setFile(blob)
+    setPreviewUrl(URL.createObjectURL(blob))
+    setKind('voice')
+    setMode('preview')
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!file) {
-      setError('Take a photo or record a video first.')
+      setError('Take a photo, record a video, or record a voice message first.')
       return
     }
     if (file.size > MAX_BYTES) {
@@ -300,9 +315,19 @@ export default function UploadVideo({ currentUser }: { currentUser: Person | nul
     setStatus('uploading')
 
     try {
-      const filename =
-        file instanceof File ? file.name : `${kind}-${Date.now()}.${kind === 'photo' ? 'jpg' : 'webm'}`
-      const mimeType = file.type || (kind === 'photo' ? 'image/jpeg' : 'video/webm')
+      const extension =
+        kind === 'photo'
+          ? 'jpg'
+          : kind === 'voice'
+            ? file.type?.includes('mp4')
+              ? 'm4a'
+              : file.type?.includes('ogg')
+                ? 'ogg'
+                : 'webm'
+            : 'webm'
+      const filename = file instanceof File ? file.name : `${kind}-${Date.now()}.${extension}`
+      const mimeType =
+        file.type || (kind === 'photo' ? 'image/jpeg' : kind === 'voice' ? 'audio/webm' : 'video/webm')
 
       // Recordings can run up to 100MB — Vercel caps an incoming request
       // body well under that, so the file goes straight from this browser
@@ -355,7 +380,7 @@ export default function UploadVideo({ currentUser }: { currentUser: Person | nul
     <>
       <button
         onClick={() => setOpen(true)}
-        aria-label="Send a vanishing photo or video"
+        aria-label="Send a vanishing photo, video, or voice message"
         className="tap-shrink fixed bottom-20 right-6 z-50 flex h-14 w-14 items-center justify-center rounded-full bg-rose text-white shadow-lg shadow-rose/30 transition hover:scale-105 hover:bg-berry active:scale-95 sm:bottom-8 sm:right-8"
       >
         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true">
@@ -390,6 +415,42 @@ export default function UploadVideo({ currentUser }: { currentUser: Person | nul
                   ✕
                 </button>
               </div>
+
+              {(mode === 'camera' || mode === 'voice') && (
+                <div className="flex gap-2 px-5 pt-4">
+                  <button
+                    type="button"
+                    onClick={() => setMode('camera')}
+                    className={`flex-1 rounded-full py-2 text-sm font-medium transition ${
+                      mode === 'camera' ? 'bg-rose text-white' : 'bg-white/10 text-cream/60 hover:bg-white/15'
+                    }`}
+                  >
+                    📷 Camera
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setMode('voice')}
+                    className={`flex-1 rounded-full py-2 text-sm font-medium transition ${
+                      mode === 'voice' ? 'bg-rose text-white' : 'bg-white/10 text-cream/60 hover:bg-white/15'
+                    }`}
+                  >
+                    🎤 Voice
+                  </button>
+                </div>
+              )}
+
+              {/* Voice recording view */}
+              {mode === 'voice' && (
+                <div className="flex flex-col items-center gap-3 px-5 py-8">
+                  <span className="text-4xl">🎙️</span>
+                  <div className="w-full max-w-xs">
+                    <VoiceRecorderField blob={null} onRecorded={handleVoiceRecorded} disabled={busy} />
+                  </div>
+                  <p className="text-center text-xs text-cream/50">
+                    No length limit — talk as long as you want.
+                  </p>
+                </div>
+              )}
 
               {/* Camera / recording view */}
               {mode === 'camera' && (
@@ -514,6 +575,11 @@ export default function UploadVideo({ currentUser }: { currentUser: Person | nul
                     {kind === 'photo' ? (
                       // eslint-disable-next-line @next/next/no-img-element
                       <img src={previewUrl} alt="Captured" className="aspect-[3/4] w-full object-cover" />
+                    ) : kind === 'voice' ? (
+                      <div className="flex aspect-[3/4] flex-col items-center justify-center gap-4">
+                        <span className="text-5xl">🎙️</span>
+                        <audio src={previewUrl} controls className="w-full max-w-[85%]" />
+                      </div>
                     ) : (
                       <video
                         src={previewUrl}

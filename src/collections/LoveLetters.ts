@@ -8,12 +8,13 @@ export const LoveLetters: CollectionConfig = {
   },
   admin: {
     useAsTitle: 'to',
-    defaultColumns: ['to', 'from', 'pinned', 'message', 'createdAt'],
-    description: 'Every letter here shows up on the Letters feed — pinned ones float to the top.',
+    defaultColumns: ['to', 'from', 'pinned', 'message', 'replyTo', 'createdAt'],
+    description:
+      'Every top-level letter here shows up on the Letters feed — pinned ones float to the top. Replies (replyTo set) show up inside that letter\'s thread instead.',
   },
   defaultSort: '-pinned,-createdAt',
   access: {
-    // Public read — this is what powers the Letters feed on the site.
+    // Public read — this is what powers the Letters feed and threads on the site.
     read: () => true,
     // Public create — anyone with the link can write one from /letters.
     // Editing/removing existing ones stays admin-only.
@@ -22,6 +23,18 @@ export const LoveLetters: CollectionConfig = {
     delete: ({ req }) => Boolean(req.user),
   },
   hooks: {
+    beforeValidate: [
+      ({ data, operation }) => {
+        if (operation !== 'create' || !data) return data
+        const hasMessage = typeof data.message === 'string' && data.message.trim().length > 0
+        const hasVoiceNote = Boolean(data.voiceNote)
+        const isHeart = data.heart === true
+        if (!hasMessage && !hasVoiceNote && !isHeart) {
+          throw new Error('A letter needs a message, a voice note, or a heart.')
+        }
+        return data
+      },
+    ],
     afterChange: [
       async ({ doc, operation, req }) => {
         if (operation !== 'create') return
@@ -29,15 +42,25 @@ export const LoveLetters: CollectionConfig = {
         if (to !== 'Ken' && to !== 'Nira') return
         const from = doc.from as string | undefined
         const who = from === 'Ken' || from === 'Nira' ? from : 'Someone'
+        const hasVoiceNote = Boolean(doc.voiceNote)
+        const hasMessage = typeof doc.message === 'string' && doc.message.trim().length > 0
+        const isReply = Boolean(doc.replyTo)
+        const replyToId = typeof doc.replyTo === 'object' ? doc.replyTo?.id : doc.replyTo
+        const link = isReply ? `/letters/${replyToId}` : '/letters'
+
+        let message: string
+        if (doc.heart) {
+          message = isReply ? `${who} sent a ❤️ in your letter` : `${who} sent you a ❤️`
+        } else if (hasVoiceNote && !hasMessage) {
+          message = isReply ? `${who} replied with a voice note` : `${who} sent you a voice note`
+        } else {
+          message = isReply ? `${who} replied to your letter` : `${who} sent you a letter`
+        }
+
         try {
           await req.payload.create({
             collection: 'notifications',
-            data: {
-              message: `${who} sent you a letter`,
-              forUser: to,
-              read: false,
-              link: '/letters',
-            },
+            data: { message, forUser: to, read: false, link },
           })
         } catch (err) {
           req.payload.logger.error(err)
@@ -72,9 +95,35 @@ export const LoveLetters: CollectionConfig = {
     {
       name: 'message',
       type: 'textarea',
-      required: true,
+      // Not required at the field level — a letter can be voice-only or a
+      // bare heart. beforeValidate above enforces "at least one of the three".
       admin: {
-        description: 'The letter itself.',
+        description: 'The letter itself. Optional if a voice note or heart is attached.',
+      },
+    },
+    {
+      name: 'voiceNote',
+      type: 'upload',
+      relationTo: 'voice-notes',
+      admin: {
+        description: 'Optional spoken letter — no length or size limit.',
+      },
+    },
+    {
+      name: 'heart',
+      type: 'checkbox',
+      defaultValue: false,
+      admin: {
+        description: 'A quick ❤️ sent with no text or voice note attached.',
+      },
+    },
+    {
+      name: 'replyTo',
+      type: 'relationship',
+      relationTo: 'love-letters',
+      admin: {
+        description:
+          'Set only on replies — always points at the top-level letter that started the thread, so threads stay one level deep.',
       },
     },
     {

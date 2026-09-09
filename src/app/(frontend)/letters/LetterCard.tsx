@@ -1,16 +1,21 @@
 'use client'
 
 import { useState } from 'react'
+import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { togglePin } from './actions'
-import type { Person } from '@/lib/dailyPassword'
+import { otherPerson, type Person } from '@/lib/dailyPassword'
 
 type Letter = {
   id: string
   to: string
-  message: string
+  message: string | null
+  voiceNoteUrl: string | null
+  heart: boolean
   createdAt: string
   pinned: boolean
+  replyCount: number
+  heartCount: number
 }
 
 function formatDate(value: string) {
@@ -35,6 +40,8 @@ export default function LetterCard({
   const router = useRouter()
   const [pinned, setPinned] = useState(letter.pinned)
   const [busy, setBusy] = useState(false)
+  const [heartCount, setHeartCount] = useState(letter.heartCount)
+  const [sendingHeart, setSendingHeart] = useState(false)
 
   const handleTogglePin = async () => {
     if (!currentUser || busy) return
@@ -49,6 +56,33 @@ export default function LetterCard({
     }
     setBusy(false)
   }
+
+  // A one-tap ❤️ reply, right from the feed — no need to open the thread.
+  const sendHeart = async () => {
+    if (!currentUser || sendingHeart) return
+    setSendingHeart(true)
+    setHeartCount((c) => c + 1) // optimistic
+    try {
+      const res = await fetch('/api/love-letters', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          to: otherPerson(currentUser),
+          from: currentUser,
+          heart: true,
+          replyTo: Number(letter.id),
+        }),
+      })
+      if (!res.ok) throw new Error()
+      router.refresh()
+    } catch {
+      setHeartCount((c) => Math.max(0, c - 1))
+    } finally {
+      setSendingHeart(false)
+    }
+  }
+
+  const isBareHeart = letter.heart && !letter.message && !letter.voiceNoteUrl
 
   return (
     <article
@@ -87,9 +121,45 @@ export default function LetterCard({
           )}
         </div>
       </div>
-      <p className="whitespace-pre-line font-serif text-[17px] leading-relaxed text-plum/85">
-        {letter.message}
-      </p>
+
+      {isBareHeart ? (
+        <p className="text-4xl">❤️</p>
+      ) : (
+        <>
+          {letter.message && (
+            <p className="whitespace-pre-line font-serif text-[17px] leading-relaxed text-plum/85">
+              {letter.message}
+            </p>
+          )}
+          {letter.voiceNoteUrl && (
+            <audio
+              src={letter.voiceNoteUrl}
+              controls
+              className={`h-10 w-full ${letter.message ? 'mt-4' : ''}`}
+            />
+          )}
+        </>
+      )}
+
+      <div className="mt-4 flex items-center justify-between border-t border-rose/10 pt-3">
+        <Link
+          href={`/letters/${letter.id}`}
+          className="text-xs font-medium text-berry/70 transition hover:text-berry"
+        >
+          {letter.replyCount > 0
+            ? `${letter.replyCount} ${letter.replyCount === 1 ? 'reply' : 'replies'} →`
+            : 'Reply →'}
+        </Link>
+        <button
+          onClick={sendHeart}
+          disabled={!currentUser || sendingHeart}
+          aria-label="Send a heart"
+          className="flex items-center gap-1 text-xs text-berry/70 transition hover:text-rose disabled:opacity-50"
+        >
+          <span>❤️</span>
+          {heartCount > 0 && <span>{heartCount}</span>}
+        </button>
+      </div>
     </article>
   )
 }

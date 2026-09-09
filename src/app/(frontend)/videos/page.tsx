@@ -1,5 +1,6 @@
 import { getPayloadClient } from '@/lib/payload'
 import { getCurrentUser } from '@/lib/session'
+import type { Person } from '@/lib/dailyPassword'
 import UploadVideo from '../components/UploadVideo'
 import DeviceGate from '../components/DeviceGate'
 import VideoListItem from './VideoListItem'
@@ -10,20 +11,36 @@ type PendingVideo = {
   id: string
   caption: string | null
   uploadedBy: string | null
-  kind: 'video' | 'photo'
+  kind: 'video' | 'photo' | 'voice'
+  canSave: boolean
+  savedByMe: boolean
 }
 
-async function getPendingVideos(): Promise<{ videos: PendingVideo[]; failed: boolean }> {
+async function getPendingVideos(
+  currentUser: Person | null,
+): Promise<{ videos: PendingVideo[]; failed: boolean }> {
   try {
     const payload = await getPayloadClient()
-    const { docs } = await payload.find({ collection: 'videos', sort: '-createdAt', limit: 100 })
+    const { docs } = await payload.find({
+      collection: 'videos',
+      // Anything unsaved is visible to both, same as always. Once saved,
+      // it's only ever returned to whoever saved it — the other person's
+      // feed query excludes it entirely, not just the UI.
+      where: {
+        or: [{ savedBy: { exists: false } }, { savedBy: { equals: currentUser } }],
+      },
+      sort: '-createdAt',
+      limit: 100,
+    })
 
     return {
       videos: docs.map((doc) => ({
         id: String(doc.id),
         caption: (doc.caption as string | undefined) || null,
         uploadedBy: (doc.uploadedBy as string | undefined) || null,
-        kind: doc.kind === 'photo' ? 'photo' : 'video',
+        kind: doc.kind === 'photo' ? 'photo' : doc.kind === 'voice' ? 'voice' : 'video',
+        canSave: currentUser === 'Ken' && !doc.savedBy,
+        savedByMe: Boolean(currentUser) && doc.savedBy === currentUser,
       })),
       failed: false,
     }
@@ -34,10 +51,8 @@ async function getPendingVideos(): Promise<{ videos: PendingVideo[]; failed: boo
 }
 
 export default async function VideosPage() {
-  const [{ videos, failed }, currentUser] = await Promise.all([
-    getPendingVideos(),
-    getCurrentUser(),
-  ])
+  const currentUser = await getCurrentUser()
+  const { videos, failed } = await getPendingVideos(currentUser)
 
   return (
     <DeviceGate>
@@ -64,6 +79,8 @@ export default async function VideosPage() {
                 caption={video.caption}
                 mine={Boolean(currentUser && video.uploadedBy === currentUser)}
                 kind={video.kind}
+                canSave={video.canSave}
+                savedByMe={video.savedByMe}
               />
             ))}
           </div>
