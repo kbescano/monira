@@ -9,12 +9,23 @@ export const dynamic = 'force-dynamic'
 async function getMemories(): Promise<{ memories: MemoryItem[]; failed: boolean }> {
   try {
     const payload = await getPayloadClient()
+    const settings = await payload.findGlobal({ slug: 'settings' }).catch(() => null)
+
+    // "Show Memories" off doesn't delete anything — it just hides whatever
+    // already existed at the moment it was turned off. Adding a memory still
+    // works normally, and anything created after that cutoff shows up same
+    // as always; turning it back on removes the cutoff entirely.
+    const showMemories = settings?.showMemories !== false
+    const hiddenAt = settings?.memoriesHiddenAt
 
     const { docs } = await payload.find({
       collection: 'memories',
       depth: 1,
       sort: '-memoryDate',
       limit: 200,
+      where: showMemories
+        ? undefined
+        : { createdAt: { greater_than: hiddenAt || new Date().toISOString() } },
     })
 
     const memories = docs

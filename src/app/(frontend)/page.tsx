@@ -25,8 +25,22 @@ async function getReasons(): Promise<string[]> {
   }
 }
 
+// Site-wide feature toggles — defaults to on if the global hasn't been
+// touched yet (Payload lazily creates it, returning field defaults until
+// someone actually saves it in /admin).
+async function getShowReasons(): Promise<boolean> {
+  try {
+    const payload = await getPayloadClient()
+    const settings = await payload.findGlobal({ slug: 'settings' })
+    return settings.showReasons !== false
+  } catch (error) {
+    console.error('Failed to load site settings from Payload:', error)
+    return true
+  }
+}
+
 export default async function HomePage() {
-  const reasons = await getReasons()
+  const [reasons, showReasons] = await Promise.all([getReasons(), getShowReasons()])
 
   return (
     <div className="relative overflow-hidden bg-gradient-to-b from-blush via-cream to-cream">
@@ -48,7 +62,7 @@ export default async function HomePage() {
         <TogetherCounter />
 
         {/* Reason generator */}
-        {reasons.length > 0 && (
+        {showReasons && reasons.length > 0 && (
           <div className="flex flex-col items-center gap-4 px-4 sm:px-0">
             <h2 className="font-serif text-2xl text-berry sm:text-3xl">
               In case you forgot why I&apos;m obsessed with you

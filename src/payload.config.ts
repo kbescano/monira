@@ -14,6 +14,7 @@ import { Reasons } from './collections/Reasons'
 import { Videos } from './collections/Videos'
 import { VoiceNotes } from './collections/VoiceNotes'
 import { Notifications } from './collections/Notifications'
+import { Settings } from './globals/Settings'
 
 const filename = fileURLToPath(import.meta.url)
 const dirname = path.dirname(filename)
@@ -27,6 +28,7 @@ export default buildConfig({
   },
   sharp,
   collections: [Users, Media, Memories, LoveLetters, Reasons, Videos, VoiceNotes, Notifications],
+  globals: [Settings],
   editor: lexicalEditor({}),
   secret: process.env.PAYLOAD_SECRET || '',
   typescript: {

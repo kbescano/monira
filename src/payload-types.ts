@@ -99,8 +99,12 @@ export interface Config {
     defaultIDType: number;
   };
   fallbackLocale: null;
-  globals: {};
-  globalsSelect: {};
+  globals: {
+    settings: Setting;
+  };
+  globalsSelect: {
+    settings: SettingsSelect<false> | SettingsSelect<true>;
+  };
   locale: null;
   widgets: {
     collections: CollectionsWidget;
@@ -646,6 +650,51 @@ export interface PayloadMigrationsSelect<T extends boolean = true> {
   batch?: T;
   updatedAt?: T;
   createdAt?: T;
+}
+/**
+ * Feature toggles for the site — turning one off hides that section without deleting its content.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "settings".
+ */
+export interface Setting {
+  id: number;
+  /**
+   * If off, the reasons button and section are hidden from the Home page — the reasons themselves stay saved in the Reasons collection.
+   */
+  showReasons?: boolean | null;
+  /**
+   * Turning this off hides every letter that exists right now. Writing (or replying to) a letter still works as normal, and anything added while it's off stays visible. Turning it back on brings everything — old and new — back.
+   */
+  showLetters?: boolean | null;
+  /**
+   * Set automatically the moment Show Letters is turned off. Not meant to be edited by hand.
+   */
+  lettersHiddenAt?: string | null;
+  /**
+   * Turning this off hides every memory that exists right now. Adding a new memory still works as normal, and anything added while it's off stays visible. Turning it back on brings everything — old and new — back.
+   */
+  showMemories?: boolean | null;
+  /**
+   * Set automatically the moment Show Memories is turned off. Not meant to be edited by hand.
+   */
+  memoriesHiddenAt?: string | null;
+  updatedAt?: string | null;
+  createdAt?: string | null;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "settings_select".
+ */
+export interface SettingsSelect<T extends boolean = true> {
+  showReasons?: T;
+  showLetters?: T;
+  lettersHiddenAt?: T;
+  showMemories?: T;
+  memoriesHiddenAt?: T;
+  updatedAt?: T;
+  createdAt?: T;
+  globalType?: T;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema

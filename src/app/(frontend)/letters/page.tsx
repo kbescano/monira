@@ -22,6 +22,15 @@ type Letter = {
 async function getLetters(): Promise<{ letters: Letter[]; failed: boolean }> {
   try {
     const payload = await getPayloadClient()
+    const settings = await payload.findGlobal({ slug: 'settings' }).catch(() => null)
+
+    // "Show Letters" off doesn't delete anything — it just hides whatever
+    // already existed at the moment it was turned off. Writing (or replying)
+    // still works normally, and anything created after that cutoff shows up
+    // same as always; turning it back on removes the cutoff entirely.
+    const showLetters = settings?.showLetters !== false
+    const hiddenAt = settings?.lettersHiddenAt
+
     const { docs } = await payload.find({
       collection: 'love-letters',
       // depth: 1 resolves voiceNote to its file (need the url) and replyTo to
@@ -29,6 +38,7 @@ async function getLetters(): Promise<{ letters: Letter[]; failed: boolean }> {
       depth: 1,
       sort: '-createdAt',
       limit: 500,
+      where: showLetters ? undefined : { createdAt: { greater_than: hiddenAt || new Date().toISOString() } },
     })
 
     // Only top-level letters (no replyTo) show up on the feed — replies live
