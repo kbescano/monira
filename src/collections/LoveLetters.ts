@@ -10,9 +10,9 @@ export const LoveLetters: CollectionConfig = {
     useAsTitle: 'to',
     defaultColumns: ['to', 'from', 'pinned', 'message', 'replyTo', 'createdAt'],
     description:
-      'Every top-level letter here shows up on the Letters feed — pinned ones float to the top. Replies (replyTo set) show up inside that letter\'s thread instead.',
+      'Every top-level letter here shows up on the Letters feed, newest first. Replies (replyTo set) show up inside that letter\'s thread instead. Pinned letters stay in feed order — pinning only affects the "view pinned" modal.',
   },
-  defaultSort: '-pinned,-createdAt',
+  defaultSort: '-createdAt',
   access: {
     // Public read — this is what powers the Letters feed and threads on the site.
     read: () => true,

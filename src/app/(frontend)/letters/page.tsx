@@ -44,12 +44,10 @@ async function getLetters(): Promise<{ letters: Letter[]; failed: boolean }> {
       if (doc.heart) heartCountByRoot.set(rootId, (heartCountByRoot.get(rootId) ?? 0) + 1)
     }
 
+    // Newest-first, same as the query order — pinned letters no longer float
+    // to the top here; pinning still works, it's just for the "view pinned"
+    // modal now, not for reordering the main feed.
     const roots = docs.filter((doc) => !doc.replyTo)
-    // Pinned float to the top, newest-first within each group.
-    roots.sort((a, b) => {
-      if (Boolean(a.pinned) !== Boolean(b.pinned)) return a.pinned ? -1 : 1
-      return new Date(b.createdAt as string).getTime() - new Date(a.createdAt as string).getTime()
-    })
 
     const letters = roots.map((doc) => {
       const voiceNote = doc.voiceNote as { url?: string | null } | number | null

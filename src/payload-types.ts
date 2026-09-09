@@ -223,7 +223,7 @@ export interface Memory {
   createdAt: string;
 }
 /**
- * Every top-level letter here shows up on the Letters feed — pinned ones float to the top. Replies (replyTo set) show up inside that letter's thread instead.
+ * Every top-level letter here shows up on the Letters feed, newest first. Replies (replyTo set) show up inside that letter's thread instead. Pinned letters stay in feed order — pinning only affects the "view pinned" modal.
  *
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "love-letters".
