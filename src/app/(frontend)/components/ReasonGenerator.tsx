@@ -2,6 +2,7 @@
 
 import { useRef, useState } from 'react'
 import { motion, AnimatePresence } from 'motion/react'
+import { notifyReasonTap } from '../actions'
 
 // Fisher-Yates — a fresh random order of every index each time the bag refills.
 function shuffled(length: number): number[] {
@@ -40,6 +41,11 @@ export default function ReasonGenerator({ reasons }: { reasons: string[] }) {
     const next = bagRef.current.shift()!
     setIndex(next)
     setCount((c) => c + 1)
+
+    // Fire-and-forget — the action itself checks who's actually logged in
+    // (only Nira triggers a notification to Ken), so this is harmless when
+    // Ken is the one tapping. Not awaited so it never delays the animation.
+    notifyReasonTap().catch(() => {})
   }
 
   return (

@@ -3,6 +3,7 @@
 import { cookies } from 'next/headers'
 import { redirect } from 'next/navigation'
 import { AUTH_COOKIE, USERS, todaysPassword } from '@/lib/dailyPassword'
+import { getPayloadClient } from '@/lib/payload'
 
 export async function login(formData: FormData) {
   const username = String(formData.get('username') ?? '').trim()
@@ -26,6 +27,20 @@ export async function login(formData: FormData) {
     // so it stops working the moment the day rolls over regardless of this.
     maxAge: 60 * 60 * 24 * 14,
   })
+
+  // Ken likes knowing the moment Nira opens the site — one-way only, he
+  // doesn't get a notification from his own logins.
+  if (person === 'Nira') {
+    try {
+      const payload = await getPayloadClient()
+      await payload.create({
+        collection: 'notifications',
+        data: { message: 'Nira just logged in', forUser: 'Ken', read: false, link: '/' },
+      })
+    } catch {
+      // Fail soft — a missed notification shouldn't block Nira from getting in.
+    }
+  }
 
   redirect(safeNext)
 }
