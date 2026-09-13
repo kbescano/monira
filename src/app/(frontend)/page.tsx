@@ -47,29 +47,19 @@ async function getSettings(): Promise<{ showReasons: boolean; proposalActive: bo
 }
 
 const EMPTY_PROPOSAL: ProposalContent = {
-  memoryPhotos: [],
+  loveLetter: '',
+  backgroundAudioUrl: null,
+  personalVideoUrl: null,
   blessings: [],
-  finalMessage: '',
   cueMessage: 'Turn around.',
 }
 
-// Only fetched while Proposal mode is actually on — no point querying
-// Memories + the Proposal global on every single homepage load otherwise.
+// Only fetched while Proposal mode is actually on — no point querying the
+// Proposal global on every single homepage load otherwise.
 async function getProposalContent(): Promise<ProposalContent> {
   try {
     const payload = await getPayloadClient()
-    const [proposal, memoriesResult] = await Promise.all([
-      payload.findGlobal({ slug: 'proposal', depth: 1 }),
-      payload.find({ collection: 'memories', depth: 1, sort: '-memoryDate', limit: 200 }),
-    ])
-
-    const memoryPhotos = memoriesResult.docs
-      .map((doc) => {
-        const image = doc.image as { url?: string | null; alt?: string | null } | number | null
-        if (!image || typeof image !== 'object' || !image.url) return null
-        return { url: image.url, alt: image.alt || (doc.title as string) || '' }
-      })
-      .filter((p): p is { url: string; alt: string } => p !== null)
+    const proposal = await payload.findGlobal({ slug: 'proposal', depth: 1 })
 
     const blessings = (proposal.blessings ?? [])
       .map((b) => {
@@ -79,10 +69,18 @@ async function getProposalContent(): Promise<ProposalContent> {
       })
       .filter((b): b is { name: string; videoUrl: string } => b !== null)
 
+    const personalVideo = proposal.personalVideo as { url?: string | null } | number | null
+    const personalVideoUrl = (personalVideo && typeof personalVideo === 'object' && personalVideo.url) || null
+
+    const backgroundAudio = proposal.backgroundAudio as { url?: string | null } | number | null
+    const backgroundAudioUrl =
+      (backgroundAudio && typeof backgroundAudio === 'object' && backgroundAudio.url) || null
+
     return {
-      memoryPhotos,
+      loveLetter: proposal.loveLetter || '',
+      backgroundAudioUrl,
+      personalVideoUrl,
       blessings,
-      finalMessage: proposal.finalMessage || '',
       cueMessage: proposal.cueMessage || 'Turn around.',
     }
   } catch (error) {
@@ -134,7 +132,6 @@ export default async function HomePage() {
             </h2>
             <ProposalGate
               displayReasons={settings.showReasons ? reasons : []}
-              proposalReasons={reasons}
               proposalActive={settings.proposalActive}
               proposal={proposal}
             />

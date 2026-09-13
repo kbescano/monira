@@ -13,13 +13,41 @@ export const Proposal: GlobalConfig = {
   },
   fields: [
     {
+      name: 'loveLetter',
+      type: 'textarea',
+      label: 'Your love letter',
+      admin: {
+        description: 'Shown full-screen early in the sequence, right after her name.',
+      },
+    },
+    {
+      name: 'backgroundAudio',
+      type: 'upload',
+      relationTo: 'proposal-videos',
+      label: 'Background song',
+      admin: {
+        description:
+          'Plays continuously underneath your letter and your own video — upload it under "Proposal Media" like the videos. Pick something roughly the length of the letter (a few seconds per comma/period) plus your video, since there\'s no automatic timing to force it to end exactly on cue anymore.',
+      },
+    },
+    {
+      name: 'personalVideo',
+      type: 'upload',
+      relationTo: 'proposal-videos',
+      label: 'Your own video message',
+      admin: {
+        description:
+          'Plays right after the letter, before the family blessing videos — upload it under "Proposal Media" like the others.',
+      },
+    },
+    {
       name: 'blessings',
       type: 'array',
       label: 'Family blessing videos',
       labels: { singular: 'Blessing', plural: 'Blessings' },
       admin: {
         description:
-          'Plays back-to-back, in this order, partway through the sequence. Upload the videos themselves under "Blessing Videos" first.',
+          'Plays back-to-back, in this order, right after your own video. Upload the videos themselves under "Blessing Videos" first.',
       },
       fields: [
         {
@@ -37,21 +65,13 @@ export const Proposal: GlobalConfig = {
       ],
     },
     {
-      name: 'finalMessage',
-      type: 'textarea',
-      label: 'Your message to her',
-      admin: {
-        description: 'Shown full-screen, right after the family videos — your own words, in writing.',
-      },
-    },
-    {
       name: 'cueMessage',
       type: 'text',
       label: 'The very last line',
       defaultValue: 'Turn around.',
       admin: {
         description:
-          'The final screen, right before you propose in person — keep it short. Whatever fits how you\'ll actually be standing together in that moment.',
+          'The final screen, right after the family videos, right before you propose in person — keep it short. Whatever fits how you\'ll actually be standing together in that moment.',
       },
     },
   ],

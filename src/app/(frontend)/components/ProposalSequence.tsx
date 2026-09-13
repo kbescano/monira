@@ -3,17 +3,29 @@
 import { useEffect, useRef, useState } from 'react'
 import { motion, AnimatePresence } from 'motion/react'
 
-export type ProposalPhoto = { url: string; alt: string }
 export type ProposalBlessing = { name: string; videoUrl: string }
 export type ProposalContent = {
-  memoryPhotos: ProposalPhoto[]
+  loveLetter: string
+  backgroundAudioUrl: string | null
+  personalVideoUrl: string | null
   blessings: ProposalBlessing[]
-  finalMessage: string
   cueMessage: string
 }
 
-type Step = 'opener' | 'reasons' | 'turn' | 'memories' | 'blessings' | 'message' | 'cue'
-const STEP_ORDER: Step[] = ['opener', 'reasons', 'turn', 'memories', 'blessings', 'message', 'cue']
+type Step = 'opener' | 'letter' | 'video' | 'blessings' | 'cue'
+const STEP_ORDER: Step[] = ['opener', 'letter', 'video', 'blessings', 'cue']
+
+// The background song starts the instant the sequence loads (before her
+// name even appears) and plays continuously through the letter and your own
+// video, then stops the moment the family videos start. Since the letter's
+// own length is fixed by how many phrases it has (not a shared budget
+// anymore), how well the song's ending lines up with your video's ending
+// now comes down to picking a song roughly the right length for the two
+// combined, rather than something the code can force exactly.
+const AUDIO_STEPS: Step[] = ['opener', 'letter', 'video']
+
+// Fixed hold per phrase in the letter.
+const PHRASE_MS = 3000
 
 const fade = {
   initial: { opacity: 0, y: 12 },
@@ -22,11 +34,44 @@ const fade = {
   transition: { duration: 0.5, ease: 'easeOut' as const },
 }
 
-/** A single blessing video — attempts autoplay, falls back to a tap-to-play
- * overlay if the browser blocks it (mobile browsers often only allow
- * autoplay-with-sound on the video that's directly tied to the user's tap,
- * not the second/third one chained in afterward). */
-function BlessingVideo({ blessing, onEnded }: { blessing: ProposalBlessing; onEnded: () => void }) {
+// The video's own entrance skips the fade-in — it should feel like it starts
+// right away the moment the letter's done, not drift in half a second later.
+const instant = {
+  initial: { opacity: 1 },
+  animate: { opacity: 1 },
+  exit: { opacity: 0 },
+  transition: { duration: 0.15 },
+}
+
+/** Splits a letter into short phrases at every comma, period, "!", or "?" —
+ * shown one at a time rather than as one long block or full sentences.
+ * Paragraph breaks are split first so a phrase never spans two paragraphs. */
+function splitIntoPhrases(text: string): string[] {
+  return text
+    .split(/\n\s*\n/)
+    .flatMap((paragraph) =>
+      paragraph
+        .trim()
+        .split(/(?<=[,.!?])\s+/)
+        .map((s) => s.trim()),
+    )
+    .filter(Boolean)
+}
+
+/** A single autoplaying video — attempts autoplay, falls back to a
+ * tap-to-play overlay if the browser blocks it (mobile browsers often only
+ * allow autoplay-with-sound on the video directly tied to the user's tap,
+ * not one chained in afterward via onEnded). Used for both your own video
+ * and each family blessing. */
+function AutoplayVideo({
+  src,
+  caption,
+  onEnded,
+}: {
+  src: string
+  caption?: string
+  onEnded: () => void
+}) {
   const videoRef = useRef<HTMLVideoElement>(null)
   const [needsTap, setNeedsTap] = useState(false)
 
@@ -39,19 +84,19 @@ function BlessingVideo({ blessing, onEnded }: { blessing: ProposalBlessing; onEn
     if (playPromise && typeof playPromise.catch === 'function') {
       playPromise.catch(() => setNeedsTap(true))
     }
-  }, [blessing.videoUrl])
+  }, [src])
 
   return (
-    <div className="flex flex-col items-center gap-4">
-      <div className="relative">
+    <div className="flex h-full w-full flex-col items-center justify-center gap-3">
+      <div className="relative flex w-full flex-1 items-center justify-center overflow-hidden">
         <video
           ref={videoRef}
-          src={blessing.videoUrl}
+          src={src}
           playsInline
           controls={false}
           onEnded={onEnded}
           onClick={(e) => e.stopPropagation()}
-          className="max-h-[60vh] w-full max-w-sm rounded-2xl object-contain"
+          className="h-full max-h-[88vh] w-full max-w-[95vw] object-contain"
         />
         {needsTap && (
           <button
@@ -60,33 +105,31 @@ function BlessingVideo({ blessing, onEnded }: { blessing: ProposalBlessing; onEn
               videoRef.current?.play().catch(() => {})
               setNeedsTap(false)
             }}
-            className="absolute inset-0 flex items-center justify-center rounded-2xl bg-black/50 text-lg text-white"
+            className="absolute inset-0 flex items-center justify-center bg-black/50 text-lg text-white"
           >
             ▶ Tap to play
           </button>
         )}
       </div>
-      <p className="font-serif text-lg text-white/90">{blessing.name}</p>
+      {caption && <p className="font-serif text-lg text-white/90">{caption}</p>}
     </div>
   )
 }
 
 export default function ProposalSequence({
-  reasons,
   proposal,
   onDone,
 }: {
-  reasons: string[]
   proposal: ProposalContent
   onDone: () => void
 }) {
   const [step, setStep] = useState<Step>('opener')
-  const [reasonIndex, setReasonIndex] = useState(0)
-  const [photoIndex, setPhotoIndex] = useState(0)
+  const [phraseIndex, setPhraseIndex] = useState(0)
   const [blessingIndex, setBlessingIndex] = useState(0)
+  const audioRef = useRef<HTMLAudioElement>(null)
 
-  const photos = proposal.memoryPhotos
   const blessings = proposal.blessings
+  const phrases = splitIntoPhrases(proposal.loveLetter)
 
   const goNext = () => {
     setStep((current) => {
@@ -95,6 +138,20 @@ export default function ProposalSequence({
     })
   }
 
+  // Background song — starts the instant the sequence loads, keeps playing
+  // uninterrupted through the letter and your own video (re-running this
+  // effect on those transitions is a no-op once it's already playing), then
+  // pauses the instant we move on to the family videos.
+  useEffect(() => {
+    const el = audioRef.current
+    if (!el || !proposal.backgroundAudioUrl) return
+    if (AUDIO_STEPS.includes(step)) {
+      if (el.paused) el.play().catch(() => {})
+    } else if (!el.paused) {
+      el.pause()
+    }
+  }, [step, proposal.backgroundAudioUrl])
+
   // opener — just her name, a moment to notice something's different.
   useEffect(() => {
     if (step !== 'opener') return
@@ -102,44 +159,27 @@ export default function ProposalSequence({
     return () => clearTimeout(t)
   }, [step])
 
-  // reasons — cycle through every one, then hold on the tally line.
+  // letter — one phrase at a time (split on comma/period/!/?), each held
+  // for a fixed PHRASE_MS.
   useEffect(() => {
-    if (step !== 'reasons') return
-    if (reasons.length === 0) {
+    if (step !== 'letter') return
+    if (phrases.length === 0) {
       goNext()
       return
     }
-    const holdingTally = reasonIndex >= reasons.length
-    const t = setTimeout(() => {
-      if (holdingTally) goNext()
-      else setReasonIndex((n) => n + 1)
-    }, holdingTally ? 2800 : 2200)
-    return () => clearTimeout(t)
-  }, [step, reasonIndex, reasons.length])
-
-  // turn — the pivot line, held quietly.
-  useEffect(() => {
-    if (step !== 'turn') return
-    const t = setTimeout(goNext, 3200)
-    return () => clearTimeout(t)
-  }, [step])
-
-  // memories — a fast flash through your life together, paced to land
-  // around ~18s total regardless of how many photos there are.
-  useEffect(() => {
-    if (step !== 'memories') return
-    if (photos.length === 0) {
-      goNext()
-      return
-    }
-    const onLast = photoIndex >= photos.length - 1
-    const interval = Math.max(180, Math.min(700, 18000 / photos.length))
+    const onLast = phraseIndex >= phrases.length - 1
     const t = setTimeout(() => {
       if (onLast) goNext()
-      else setPhotoIndex((n) => n + 1)
-    }, onLast ? 2400 : interval)
+      else setPhraseIndex((n) => n + 1)
+    }, PHRASE_MS)
     return () => clearTimeout(t)
-  }, [step, photoIndex, photos.length])
+  }, [step, phraseIndex, phrases.length])
+
+  // video — your own video message, chained by its own onEnded, not a timer.
+  useEffect(() => {
+    if (step !== 'video') return
+    if (!proposal.personalVideoUrl) goNext()
+  }, [step, proposal.personalVideoUrl])
 
   // blessings — chained by each video's onEnded, not a timer.
   useEffect(() => {
@@ -147,32 +187,42 @@ export default function ProposalSequence({
     if (blessings.length === 0) goNext()
   }, [step, blessings.length])
 
-  // message — your own written words, held long enough to actually read.
-  useEffect(() => {
-    if (step !== 'message') return
-    if (!proposal.finalMessage.trim()) {
-      goNext()
-      return
-    }
-    const holdMs = Math.max(5000, proposal.finalMessage.length * 70)
-    const t = setTimeout(goNext, holdMs)
-    return () => clearTimeout(t)
-  }, [step, proposal.finalMessage])
-
   // Tapping anywhere nudges things forward early — a safety net if a step
-  // feels too slow in the actual moment. Not wired up during the blessings
-  // step itself (each video's own onEnded/tap-to-play handles that one) or
+  // feels too slow in the actual moment. Not wired up during the video/
+  // blessings steps (each video's own onEnded/tap-to-play handles that) or
   // on the final cue (nothing left to advance to — that's the real thing now).
   const handleTapAdvance = () => {
-    if (step === 'blessings' || step === 'cue') return
+    if (step === 'video' || step === 'blessings' || step === 'cue') return
     goNext()
   }
 
+  const isFullBleedVideo = step === 'video' || step === 'blessings'
+
   return (
     <div
-      className="fixed inset-0 z-[100] flex flex-col items-center justify-center gap-6 bg-black px-6 text-center"
+      className={`fixed inset-0 z-[100] flex flex-col items-center justify-center bg-black text-center ${
+        isFullBleedVideo ? '' : 'gap-6 px-6'
+      }`}
       onClick={handleTapAdvance}
     >
+      {proposal.backgroundAudioUrl && <audio ref={audioRef} src={proposal.backgroundAudioUrl} />}
+
+      {/* Warms up the video during the letter, so by the time the video step
+          actually mounts, the browser already has a head start on fetching
+          it instead of starting from zero — same URL, so the real player
+          picks up wherever this got to. Not rendered once we're actually on
+          the video step, so there's only ever one element pulling the file. */}
+      {proposal.personalVideoUrl && (step === 'opener' || step === 'letter') && (
+        <video
+          key="preload-video"
+          src={proposal.personalVideoUrl}
+          preload="auto"
+          muted
+          playsInline
+          style={{ position: 'absolute', width: 1, height: 1, opacity: 0, pointerEvents: 'none' }}
+        />
+      )}
+
       <button
         onClick={(e) => {
           e.stopPropagation()
@@ -191,63 +241,42 @@ export default function ProposalSequence({
           </motion.h1>
         )}
 
-        {step === 'reasons' &&
-          (reasonIndex < reasons.length ? (
-            <motion.p
-              key={`reason-${reasonIndex}`}
-              {...fade}
-              className="max-w-md font-serif text-xl text-white sm:text-2xl"
-            >
-              &ldquo;{reasons[reasonIndex]}&rdquo;
-            </motion.p>
-          ) : (
-            <motion.p key="tally" {...fade} className="max-w-sm font-serif text-xl text-white sm:text-2xl">
-              {reasons.length} reasons. And I could keep going forever.
-            </motion.p>
-          ))}
-
-        {step === 'turn' && (
-          <motion.p key="turn" {...fade} className="max-w-sm font-script text-4xl text-white sm:text-5xl">
-            But saying it still isn&apos;t enough.
+        {step === 'letter' && phrases[phraseIndex] && (
+          <motion.p
+            key={`phrase-${phraseIndex}`}
+            {...fade}
+            className="max-w-md font-serif text-xl text-white sm:text-2xl"
+          >
+            {phrases[phraseIndex]}
           </motion.p>
         )}
 
-        {step === 'memories' && photos[photoIndex] && (
-          <motion.div key={`photo-${photoIndex}`} {...fade} className="flex flex-col items-center gap-4">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src={photos[photoIndex].url}
-              alt={photos[photoIndex].alt}
-              className="max-h-[65vh] w-full max-w-sm rounded-2xl object-contain"
-            />
-            {photoIndex === photos.length - 1 && (
-              <p className="font-serif text-base text-white/80 sm:text-lg">
-                So I asked the people who&apos;ve known you longest.
-              </p>
-            )}
+        {step === 'video' && proposal.personalVideoUrl && (
+          <motion.div key="video" {...instant} className="flex h-full w-full items-center justify-center">
+            <AutoplayVideo src={proposal.personalVideoUrl} onEnded={goNext} />
           </motion.div>
         )}
 
         {step === 'blessings' && blessings[blessingIndex] && (
-          <motion.div key={`blessing-${blessingIndex}`} {...fade}>
-            <BlessingVideo
-              blessing={blessings[blessingIndex]}
+          <motion.div
+            key={`blessing-${blessingIndex}`}
+            {...fade}
+            className="flex h-full w-full flex-col items-center justify-center gap-4"
+          >
+            {blessingIndex === 0 && (
+              <p className="font-serif text-base text-white/80 sm:text-lg">
+                So I asked the people who&apos;ve known you longest.
+              </p>
+            )}
+            <AutoplayVideo
+              src={blessings[blessingIndex].videoUrl}
+              caption={blessings[blessingIndex].name}
               onEnded={() => {
                 if (blessingIndex < blessings.length - 1) setBlessingIndex((n) => n + 1)
                 else goNext()
               }}
             />
           </motion.div>
-        )}
-
-        {step === 'message' && proposal.finalMessage.trim() && (
-          <motion.p
-            key="message"
-            {...fade}
-            className="max-w-md whitespace-pre-wrap font-serif text-xl text-white sm:text-2xl"
-          >
-            {proposal.finalMessage}
-          </motion.p>
         )}
 
         {step === 'cue' && (

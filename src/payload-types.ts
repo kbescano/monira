@@ -345,7 +345,7 @@ export interface Video {
   focalY?: number | null;
 }
 /**
- * Family blessing videos for the proposal sequence. Upload here, then add each one to the "blessings" list on the Proposal global, in the order they should play.
+ * Videos and audio for the proposal sequence — family blessings, your own video, the background song. Upload here, then reference each one from the Proposal global.
  *
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "proposal-videos".
@@ -752,7 +752,19 @@ export interface Setting {
 export interface Proposal {
   id: number;
   /**
-   * Plays back-to-back, in this order, partway through the sequence. Upload the videos themselves under "Blessing Videos" first.
+   * Shown full-screen early in the sequence, right after her name.
+   */
+  loveLetter?: string | null;
+  /**
+   * Plays continuously underneath your letter and your own video — upload it under "Proposal Media" like the videos. Pick something roughly the length of the letter (a few seconds per comma/period) plus your video, since there's no automatic timing to force it to end exactly on cue anymore.
+   */
+  backgroundAudio?: (number | null) | ProposalVideo;
+  /**
+   * Plays right after the letter, before the family blessing videos — upload it under "Proposal Media" like the others.
+   */
+  personalVideo?: (number | null) | ProposalVideo;
+  /**
+   * Plays back-to-back, in this order, right after your own video. Upload the videos themselves under "Blessing Videos" first.
    */
   blessings?:
     | {
@@ -765,11 +777,7 @@ export interface Proposal {
       }[]
     | null;
   /**
-   * Shown full-screen, right after the family videos — your own words, in writing.
-   */
-  finalMessage?: string | null;
-  /**
-   * The final screen, right before you propose in person — keep it short. Whatever fits how you'll actually be standing together in that moment.
+   * The final screen, right after the family videos, right before you propose in person — keep it short. Whatever fits how you'll actually be standing together in that moment.
    */
   cueMessage?: string | null;
   updatedAt?: string | null;
@@ -798,6 +806,9 @@ export interface SettingsSelect<T extends boolean = true> {
  * via the `definition` "proposal_select".
  */
 export interface ProposalSelect<T extends boolean = true> {
+  loveLetter?: T;
+  backgroundAudio?: T;
+  personalVideo?: T;
   blessings?:
     | T
     | {
@@ -805,7 +816,6 @@ export interface ProposalSelect<T extends boolean = true> {
         video?: T;
         id?: T;
       };
-  finalMessage?: T;
   cueMessage?: T;
   updatedAt?: T;
   createdAt?: T;

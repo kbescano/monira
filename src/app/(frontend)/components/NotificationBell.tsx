@@ -35,8 +35,11 @@ export default function NotificationBell({ currentUser }: { currentUser: Person 
   const [items, setItems] = useState<Notification[]>([])
   const [open, setOpen] = useState(false)
 
-  const load = useCallback(async () => {
-    if (!currentUser) return
+  // Returns the freshly-fetched list (not just setting state) so a caller
+  // that needs to act on up-to-date data — like markAllRead right below —
+  // doesn't end up working off the stale `items` from its own closure.
+  const load = useCallback(async (): Promise<Notification[]> => {
+    if (!currentUser) return []
     const since = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()
     const params = new URLSearchParams({
       'where[forUser][equals]': currentUser,
@@ -47,32 +50,35 @@ export default function NotificationBell({ currentUser }: { currentUser: Person 
     })
     try {
       const res = await fetch(`/api/notifications?${params.toString()}`)
-      if (!res.ok) return
+      if (!res.ok) return items
       const data = (await res.json()) as { docs?: RawDoc[] }
-      setItems(
-        (data.docs ?? []).map((d) => ({
-          id: String(d.id),
-          message: d.message,
-          read: Boolean(d.read),
-          createdAt: d.createdAt,
-          link: d.link ?? null,
-        })),
-      )
+      const fresh = (data.docs ?? []).map((d) => ({
+        id: String(d.id),
+        message: d.message,
+        read: Boolean(d.read),
+        createdAt: d.createdAt,
+        link: d.link ?? null,
+      }))
+      setItems(fresh)
+      return fresh
     } catch {
       // Silent — the bell just keeps showing whatever it last had.
+      return items
     }
-  }, [currentUser])
+  }, [currentUser, items])
 
+  // Loads once on mount (i.e. whenever the page loads/refreshes) — no more
+  // polling in the background; opening the bell (below) is what refreshes
+  // it after that.
   useEffect(() => {
     load()
-    const interval = setInterval(load, 60_000)
-    return () => clearInterval(interval)
-  }, [load])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentUser])
 
   const unreadCount = items.filter((i) => !i.read).length
 
-  const markAllRead = async () => {
-    const unread = items.filter((i) => !i.read)
+  const markAllRead = async (list: Notification[]) => {
+    const unread = list.filter((i) => !i.read)
     if (unread.length === 0) return
     setItems((prev) => prev.map((i) => ({ ...i, read: true })))
     await Promise.all(
@@ -86,10 +92,13 @@ export default function NotificationBell({ currentUser }: { currentUser: Person 
     )
   }
 
-  const toggle = () => {
+  const toggle = async () => {
     const next = !open
     setOpen(next)
-    if (next) markAllRead()
+    if (next) {
+      const fresh = await load()
+      markAllRead(fresh)
+    }
   }
 
   if (!currentUser) return null
