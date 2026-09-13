@@ -14,7 +14,18 @@ function shuffled(length: number): number[] {
   return arr
 }
 
-export default function ReasonGenerator({ reasons }: { reasons: string[] }) {
+export default function ReasonGenerator({
+  reasons,
+  proposalActive,
+  onStartProposal,
+}: {
+  reasons: string[]
+  // When true, tapping the button launches the proposal sequence instead of
+  // the normal one-reason-at-a-time behavior below — see ProposalGate, which
+  // owns the actual sequence and passes this down.
+  proposalActive?: boolean
+  onStartProposal?: () => void
+}) {
   const [index, setIndex] = useState<number | null>(null)
   const [count, setCount] = useState(0)
   // A "shuffle bag": a random-ordered queue of every reason. Draw from it
@@ -23,6 +34,11 @@ export default function ReasonGenerator({ reasons }: { reasons: string[] }) {
   const bagRef = useRef<number[]>([])
 
   const showNext = () => {
+    if (proposalActive && onStartProposal) {
+      onStartProposal()
+      return
+    }
+
     // Nothing to draw from — either the reasons feature is toggled off (the
     // page passes an empty array in that case) or the list is genuinely
     // empty. Either way, tapping just quietly does nothing instead of the

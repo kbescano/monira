@@ -80,5 +80,35 @@ export const Settings: GlobalConfig = {
         description: 'Set automatically the moment Show Memories is turned off. Not meant to be edited by hand.',
       },
     },
+    {
+      name: 'proposalActive',
+      type: 'checkbox',
+      defaultValue: false,
+      label: 'Proposal mode',
+      admin: {
+        description:
+          'While on, tapping the reason button on the Home page launches the proposal sequence instead of a normal reason — fill in its content under the "Proposal" global first. Safe to turn on and preview yourself beforehand; nothing is used up or deleted by watching it.',
+      },
+    },
+    {
+      name: 'requireViewOnceGate',
+      type: 'checkbox',
+      defaultValue: false,
+      label: 'Send View Once (gate)',
+      admin: {
+        description:
+          'When this AND the three "Show" toggles above are all on: Nira has to send 3 View Once items before Reasons, Letters, and Memories unlock for her. Ken is never gated by this. Once she\'s sent 3, it stays unlocked for good — reset the count below to make her do it again.',
+      },
+    },
+    {
+      name: 'niraViewOnceSentCount',
+      type: 'number',
+      defaultValue: 0,
+      label: "Nira's View Once sent count",
+      admin: {
+        description:
+          'Increments automatically each time Nira sends a View Once video, photo, or voice message. Only counts sends from when this feature was added onward. Set back to 0 by hand if you want her to do it again.',
+      },
+    },
   ],
 }

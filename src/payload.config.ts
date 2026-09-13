@@ -13,8 +13,10 @@ import { LoveLetters } from './collections/LoveLetters'
 import { Reasons } from './collections/Reasons'
 import { Videos } from './collections/Videos'
 import { VoiceNotes } from './collections/VoiceNotes'
+import { ProposalVideos } from './collections/ProposalVideos'
 import { Notifications } from './collections/Notifications'
 import { Settings } from './globals/Settings'
+import { Proposal } from './globals/Proposal'
 
 const filename = fileURLToPath(import.meta.url)
 const dirname = path.dirname(filename)
@@ -27,8 +29,18 @@ export default buildConfig({
     },
   },
   sharp,
-  collections: [Users, Media, Memories, LoveLetters, Reasons, Videos, VoiceNotes, Notifications],
-  globals: [Settings],
+  collections: [
+    Users,
+    Media,
+    Memories,
+    LoveLetters,
+    Reasons,
+    Videos,
+    VoiceNotes,
+    ProposalVideos,
+    Notifications,
+  ],
+  globals: [Settings, Proposal],
   editor: lexicalEditor({}),
   secret: process.env.PAYLOAD_SECRET || '',
   typescript: {
@@ -59,18 +71,22 @@ export default buildConfig({
         forcePathStyle: true,
       },
     }),
-    // Videos and voice notes share an instance with clientUploads on:
-    // recordings have no size cap, and Vercel serverless functions cap an
-    // incoming request body around 4.5MB regardless of anything configured
-    // here. clientUploads has the browser PUT the file straight to R2 with a
-    // presigned URL — bypassing that cap entirely — then hands Payload just
-    // the small JSON needed to register the doc. `access: () => true`
-    // matches both collections' own public-create policy (already gated by
-    // the site-wide login at the middleware level).
+    // Videos, voice notes, and proposal videos share an instance with
+    // clientUploads on: recordings (and family blessing videos) have no size
+    // cap, and Vercel serverless functions cap an incoming request body
+    // around 4.5MB regardless of anything configured here. clientUploads has
+    // the browser PUT the file straight to R2 with a presigned URL —
+    // bypassing that cap entirely — then hands Payload just the small JSON
+    // needed to register the doc. This `access: () => true` only governs who
+    // can request a presigned URL, not who can register a doc — actually
+    // creating a proposal-videos doc still requires a real Payload admin
+    // session per that collection's own `create` access, so this being
+    // public doesn't let anyone but you actually add a blessing video.
     s3Storage({
       collections: {
         videos: true,
         'voice-notes': true,
+        'proposal-videos': true,
       },
       bucket: process.env.R2_BUCKET || '',
       config: {

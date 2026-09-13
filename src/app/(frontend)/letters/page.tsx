@@ -1,7 +1,9 @@
 import { getPayloadClient } from '@/lib/payload'
 import { getCurrentUser } from '@/lib/session'
+import { getViewOnceGateStatus } from '@/lib/viewOnceGate'
 import { otherPerson } from '@/lib/dailyPassword'
 import WriteLoveLetter from '../components/WriteLoveLetter'
+import ViewOnceGateNotice from '../components/ViewOnceGateNotice'
 import LetterCard from './LetterCard'
 import PinnedLettersButton from './PinnedLettersButton'
 import { lettersPage } from '../content'
@@ -81,7 +83,18 @@ async function getLetters(): Promise<{ letters: Letter[]; failed: boolean }> {
 }
 
 export default async function LettersPage() {
-  const [{ letters, failed }, currentUser] = await Promise.all([getLetters(), getCurrentUser()])
+  const currentUser = await getCurrentUser()
+  const gate = await getViewOnceGateStatus(currentUser)
+
+  if (gate.locked) {
+    return (
+      <div className="min-h-screen bg-gradient-to-b from-blush via-cream to-cream">
+        <ViewOnceGateNotice remaining={gate.remaining} />
+      </div>
+    )
+  }
+
+  const { letters, failed } = await getLetters()
   const defaultTo = currentUser ? otherPerson(currentUser) : 'Nira'
 
   return (

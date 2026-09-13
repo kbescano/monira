@@ -1,0 +1,58 @@
+import type { GlobalConfig } from 'payload'
+
+export const Proposal: GlobalConfig = {
+  slug: 'proposal',
+  label: 'Proposal',
+  admin: {
+    description:
+      'Content for the proposal sequence. Turn it on with "Proposal mode" under Site Settings once everything here is filled in — you can preview the whole thing yourself first, nothing here is used up by watching it.',
+  },
+  access: {
+    read: () => true,
+    update: ({ req }) => Boolean(req.user),
+  },
+  fields: [
+    {
+      name: 'blessings',
+      type: 'array',
+      label: 'Family blessing videos',
+      labels: { singular: 'Blessing', plural: 'Blessings' },
+      admin: {
+        description:
+          'Plays back-to-back, in this order, partway through the sequence. Upload the videos themselves under "Blessing Videos" first.',
+      },
+      fields: [
+        {
+          name: 'name',
+          type: 'text',
+          required: true,
+          admin: { description: 'Shown under their video, e.g. "Mom", "Dad", "Her sister Jen".' },
+        },
+        {
+          name: 'video',
+          type: 'upload',
+          relationTo: 'proposal-videos',
+          required: true,
+        },
+      ],
+    },
+    {
+      name: 'finalMessage',
+      type: 'textarea',
+      label: 'Your message to her',
+      admin: {
+        description: 'Shown full-screen, right after the family videos — your own words, in writing.',
+      },
+    },
+    {
+      name: 'cueMessage',
+      type: 'text',
+      label: 'The very last line',
+      defaultValue: 'Turn around.',
+      admin: {
+        description:
+          'The final screen, right before you propose in person — keep it short. Whatever fits how you\'ll actually be standing together in that moment.',
+      },
+    },
+  ],
+}

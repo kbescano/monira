@@ -1,7 +1,9 @@
 import { getPayloadClient } from '@/lib/payload'
 import { getCurrentUser } from '@/lib/session'
+import { getViewOnceGateStatus } from '@/lib/viewOnceGate'
 import MemoriesGallery, { type MemoryItem } from '../components/MemoriesGallery'
 import UploadMemory from '../components/UploadMemory'
+import ViewOnceGateNotice from '../components/ViewOnceGateNotice'
 import { memoriesPage } from '../content'
 
 export const dynamic = 'force-dynamic'
@@ -64,7 +66,18 @@ async function getMemories(): Promise<{ memories: MemoryItem[]; failed: boolean 
 }
 
 export default async function MemoriesPage() {
-  const [{ memories, failed }, currentUser] = await Promise.all([getMemories(), getCurrentUser()])
+  const currentUser = await getCurrentUser()
+  const gate = await getViewOnceGateStatus(currentUser)
+
+  if (gate.locked) {
+    return (
+      <div className="min-h-screen bg-cream">
+        <ViewOnceGateNotice remaining={gate.remaining} />
+      </div>
+    )
+  }
+
+  const { memories, failed } = await getMemories()
 
   return (
     <div className="min-h-screen bg-cream">

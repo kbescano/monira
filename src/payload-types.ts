@@ -74,6 +74,7 @@ export interface Config {
     reasons: Reason;
     videos: Video;
     'voice-notes': VoiceNote;
+    'proposal-videos': ProposalVideo;
     notifications: Notification;
     'payload-kv': PayloadKv;
     'payload-locked-documents': PayloadLockedDocument;
@@ -89,6 +90,7 @@ export interface Config {
     reasons: ReasonsSelect<false> | ReasonsSelect<true>;
     videos: VideosSelect<false> | VideosSelect<true>;
     'voice-notes': VoiceNotesSelect<false> | VoiceNotesSelect<true>;
+    'proposal-videos': ProposalVideosSelect<false> | ProposalVideosSelect<true>;
     notifications: NotificationsSelect<false> | NotificationsSelect<true>;
     'payload-kv': PayloadKvSelect<false> | PayloadKvSelect<true>;
     'payload-locked-documents': PayloadLockedDocumentsSelect<false> | PayloadLockedDocumentsSelect<true>;
@@ -101,9 +103,11 @@ export interface Config {
   fallbackLocale: null;
   globals: {
     settings: Setting;
+    proposal: Proposal;
   };
   globalsSelect: {
     settings: SettingsSelect<false> | SettingsSelect<true>;
+    proposal: ProposalSelect<false> | ProposalSelect<true>;
   };
   locale: null;
   widgets: {
@@ -341,6 +345,26 @@ export interface Video {
   focalY?: number | null;
 }
 /**
+ * Family blessing videos for the proposal sequence. Upload here, then add each one to the "blessings" list on the Proposal global, in the order they should play.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "proposal-videos".
+ */
+export interface ProposalVideo {
+  id: number;
+  updatedAt: string;
+  createdAt: string;
+  url?: string | null;
+  thumbnailURL?: string | null;
+  filename?: string | null;
+  mimeType?: string | null;
+  filesize?: number | null;
+  width?: number | null;
+  height?: number | null;
+  focalX?: number | null;
+  focalY?: number | null;
+}
+/**
  * Auto-created when a letter arrives or a photo is uploaded. The bell only shows the last 24 hours.
  *
  * This interface was referenced by `Config`'s JSON-Schema
@@ -412,6 +436,10 @@ export interface PayloadLockedDocument {
     | ({
         relationTo: 'voice-notes';
         value: number | VoiceNote;
+      } | null)
+    | ({
+        relationTo: 'proposal-videos';
+        value: number | ProposalVideo;
       } | null)
     | ({
         relationTo: 'notifications';
@@ -601,6 +629,23 @@ export interface VoiceNotesSelect<T extends boolean = true> {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "proposal-videos_select".
+ */
+export interface ProposalVideosSelect<T extends boolean = true> {
+  updatedAt?: T;
+  createdAt?: T;
+  url?: T;
+  thumbnailURL?: T;
+  filename?: T;
+  mimeType?: T;
+  filesize?: T;
+  width?: T;
+  height?: T;
+  focalX?: T;
+  focalY?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "notifications_select".
  */
 export interface NotificationsSelect<T extends boolean = true> {
@@ -679,6 +724,50 @@ export interface Setting {
    * Set automatically the moment Show Memories is turned off. Not meant to be edited by hand.
    */
   memoriesHiddenAt?: string | null;
+  /**
+   * While on, tapping the reason button on the Home page launches the proposal sequence instead of a normal reason — fill in its content under the "Proposal" global first. Safe to turn on and preview yourself beforehand; nothing is used up or deleted by watching it.
+   */
+  proposalActive?: boolean | null;
+  /**
+   * When this AND the three "Show" toggles above are all on: Nira has to send 3 View Once items before Reasons, Letters, and Memories unlock for her. Ken is never gated by this. Once she's sent 3, it stays unlocked for good — reset the count below to make her do it again.
+   */
+  requireViewOnceGate?: boolean | null;
+  /**
+   * Increments automatically each time Nira sends a View Once video, photo, or voice message. Only counts sends from when this feature was added onward. Set back to 0 by hand if you want her to do it again.
+   */
+  niraViewOnceSentCount?: number | null;
+  updatedAt?: string | null;
+  createdAt?: string | null;
+}
+/**
+ * Content for the proposal sequence. Turn it on with "Proposal mode" under Site Settings once everything here is filled in — you can preview the whole thing yourself first, nothing here is used up by watching it.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "proposal".
+ */
+export interface Proposal {
+  id: number;
+  /**
+   * Plays back-to-back, in this order, partway through the sequence. Upload the videos themselves under "Blessing Videos" first.
+   */
+  blessings?:
+    | {
+        /**
+         * Shown under their video, e.g. "Mom", "Dad", "Her sister Jen".
+         */
+        name: string;
+        video: number | ProposalVideo;
+        id?: string | null;
+      }[]
+    | null;
+  /**
+   * Shown full-screen, right after the family videos — your own words, in writing.
+   */
+  finalMessage?: string | null;
+  /**
+   * The final screen, right before you propose in person — keep it short. Whatever fits how you'll actually be standing together in that moment.
+   */
+  cueMessage?: string | null;
   updatedAt?: string | null;
   createdAt?: string | null;
 }
@@ -692,6 +781,27 @@ export interface SettingsSelect<T extends boolean = true> {
   lettersHiddenAt?: T;
   showMemories?: T;
   memoriesHiddenAt?: T;
+  proposalActive?: T;
+  requireViewOnceGate?: T;
+  niraViewOnceSentCount?: T;
+  updatedAt?: T;
+  createdAt?: T;
+  globalType?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "proposal_select".
+ */
+export interface ProposalSelect<T extends boolean = true> {
+  blessings?:
+    | T
+    | {
+        name?: T;
+        video?: T;
+        id?: T;
+      };
+  finalMessage?: T;
+  cueMessage?: T;
   updatedAt?: T;
   createdAt?: T;
   globalType?: T;

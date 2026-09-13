@@ -50,6 +50,23 @@ export const Videos: CollectionConfig = {
         } catch (err) {
           req.payload.logger.error(err)
         }
+
+        // Tracks lifetime View Once sends from Nira for the "send 3 before
+        // Reasons/Letters/Memories unlock" gate — has to be a running counter
+        // rather than counting existing docs, since most of these get deleted
+        // the moment they're watched (or occasionally saved), so there's no
+        // reliable "how many has she sent" query once time passes.
+        if (uploadedBy === 'Nira') {
+          try {
+            const settings = await req.payload.findGlobal({ slug: 'settings' })
+            await req.payload.updateGlobal({
+              slug: 'settings',
+              data: { niraViewOnceSentCount: (settings.niraViewOnceSentCount ?? 0) + 1 },
+            })
+          } catch (err) {
+            req.payload.logger.error(err)
+          }
+        }
       },
     ],
   },
