@@ -110,5 +110,15 @@ export const Settings: GlobalConfig = {
           'Increments automatically each time Nira sends a View Once video, photo, or voice message. Only counts sends from when this feature was added onward. Set back to 0 by hand if you want her to do it again.',
       },
     },
+    {
+      name: 'showSaved',
+      type: 'checkbox',
+      defaultValue: true,
+      label: 'Show saved',
+      admin: {
+        description:
+          'Whether your saved View Once items show up in your own /videos list. Off just hides them from the list — nothing gets un-saved, and Nira never sees them either way.',
+      },
+    },
   ],
 }

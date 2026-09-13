@@ -1,3 +1,4 @@
+import type { Where } from 'payload'
 import { getPayloadClient } from '@/lib/payload'
 import { getCurrentUser } from '@/lib/session'
 import type { Person } from '@/lib/dailyPassword'
@@ -21,14 +22,21 @@ async function getPendingVideos(
 ): Promise<{ videos: PendingVideo[]; failed: boolean }> {
   try {
     const payload = await getPayloadClient()
+    const settings = await payload.findGlobal({ slug: 'settings' }).catch(() => null)
+
+    // "Show saved" only ever affects Ken — Nira's `savedBy` branch below
+    // never matches anything anyway, since only Ken can save one. Off just
+    // hides his saved stash from this list; nothing gets un-saved, and the
+    // items themselves are still reachable directly if he already has the link.
+    const showSavedToKen = settings?.showSaved !== false
+    const where: Where =
+      currentUser === 'Ken' && !showSavedToKen
+        ? { savedBy: { exists: false } }
+        : { or: [{ savedBy: { exists: false } }, { savedBy: { equals: currentUser } }] }
+
     const { docs } = await payload.find({
       collection: 'videos',
-      // Anything unsaved is visible to both, same as always. Once saved,
-      // it's only ever returned to whoever saved it — the other person's
-      // feed query excludes it entirely, not just the UI.
-      where: {
-        or: [{ savedBy: { exists: false } }, { savedBy: { equals: currentUser } }],
-      },
+      where,
       sort: '-createdAt',
       limit: 100,
     })
