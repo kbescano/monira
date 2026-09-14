@@ -8,23 +8,31 @@ export type ProposalContent = {
   loveLetter: string
   backgroundAudioUrl: string | null
   personalVideoUrl: string | null
+  blessingsIntro: string
+  secondAudioUrl: string | null
   blessings: ProposalBlessing[]
   cueMessage: string
 }
 
-type Step = 'opener' | 'letter' | 'video' | 'blessings' | 'cue'
-const STEP_ORDER: Step[] = ['opener', 'letter', 'video', 'blessings', 'cue']
+type Step = 'opener' | 'letter' | 'video' | 'blessingsIntro' | 'blessings' | 'cue'
+const STEP_ORDER: Step[] = ['opener', 'letter', 'video', 'blessingsIntro', 'blessings', 'cue']
 
-// The background song starts the instant the sequence loads (before her
-// name even appears) and plays continuously through the letter and your own
-// video, then stops the moment the family videos start. Since the letter's
-// own length is fixed by how many phrases it has (not a shared budget
-// anymore), how well the song's ending lines up with your video's ending
-// now comes down to picking a song roughly the right length for the two
-// combined, rather than something the code can force exactly.
-const AUDIO_STEPS: Step[] = ['opener', 'letter', 'video']
+// The first song starts the instant the sequence loads (before her name even
+// appears) and plays continuously through the letter and your own video,
+// then stops the moment the family-videos section starts. Since the
+// letter's own length is fixed by how many phrases it has (not a shared
+// budget anymore), how well the song's ending lines up with your video's
+// ending now comes down to picking a song roughly the right length for the
+// two combined, rather than something the code can force exactly.
+const FIRST_AUDIO_STEPS: Step[] = ['opener', 'letter', 'video']
 
-// Fixed hold per phrase in the letter.
+// The second song picks up the instant the first one stops — right as the
+// intro before the family videos appears — and stays on, quietly, through
+// the family videos themselves so it doesn't compete with them talking.
+const SECOND_AUDIO_STEPS: Step[] = ['blessingsIntro', 'blessings']
+const SECOND_AUDIO_VOLUME = 0.05
+
+// Fixed hold per phrase in the letter / blessings intro.
 const PHRASE_MS = 3000
 
 const fade = {
@@ -43,9 +51,10 @@ const instant = {
   transition: { duration: 0.15 },
 }
 
-/** Splits a letter into short phrases at every comma, period, "!", or "?" —
+/** Splits text into short phrases at every comma, period, "!", or "?" —
  * shown one at a time rather than as one long block or full sentences.
- * Paragraph breaks are split first so a phrase never spans two paragraphs. */
+ * Paragraph breaks are split first so a phrase never spans two paragraphs.
+ * Used for both the letter and the blessings intro. */
 function splitIntoPhrases(text: string): string[] {
   return text
     .split(/\n\s*\n/)
@@ -125,11 +134,14 @@ export default function ProposalSequence({
 }) {
   const [step, setStep] = useState<Step>('opener')
   const [phraseIndex, setPhraseIndex] = useState(0)
+  const [introPhraseIndex, setIntroPhraseIndex] = useState(0)
   const [blessingIndex, setBlessingIndex] = useState(0)
   const audioRef = useRef<HTMLAudioElement>(null)
+  const secondAudioRef = useRef<HTMLAudioElement>(null)
 
   const blessings = proposal.blessings
   const phrases = splitIntoPhrases(proposal.loveLetter)
+  const introPhrases = splitIntoPhrases(proposal.blessingsIntro)
 
   const goNext = () => {
     setStep((current) => {
@@ -138,19 +150,30 @@ export default function ProposalSequence({
     })
   }
 
-  // Background song — starts the instant the sequence loads, keeps playing
-  // uninterrupted through the letter and your own video (re-running this
-  // effect on those transitions is a no-op once it's already playing), then
-  // pauses the instant we move on to the family videos.
+  // First song — see FIRST_AUDIO_STEPS above.
   useEffect(() => {
     const el = audioRef.current
     if (!el || !proposal.backgroundAudioUrl) return
-    if (AUDIO_STEPS.includes(step)) {
+    if (FIRST_AUDIO_STEPS.includes(step)) {
       if (el.paused) el.play().catch(() => {})
     } else if (!el.paused) {
       el.pause()
     }
   }, [step, proposal.backgroundAudioUrl])
+
+  // Second song — see SECOND_AUDIO_STEPS above. Volume is reset on every run
+  // of this effect (harmless if already set) so it's always quiet, however
+  // it got started.
+  useEffect(() => {
+    const el = secondAudioRef.current
+    if (!el || !proposal.secondAudioUrl) return
+    el.volume = SECOND_AUDIO_VOLUME
+    if (SECOND_AUDIO_STEPS.includes(step)) {
+      if (el.paused) el.play().catch(() => {})
+    } else if (!el.paused) {
+      el.pause()
+    }
+  }, [step, proposal.secondAudioUrl])
 
   // opener — just her name, a moment to notice something's different.
   useEffect(() => {
@@ -181,6 +204,22 @@ export default function ProposalSequence({
     if (!proposal.personalVideoUrl) goNext()
   }, [step, proposal.personalVideoUrl])
 
+  // blessingsIntro — same phrase-by-phrase treatment as the letter, right
+  // before the family videos begin.
+  useEffect(() => {
+    if (step !== 'blessingsIntro') return
+    if (introPhrases.length === 0) {
+      goNext()
+      return
+    }
+    const onLast = introPhraseIndex >= introPhrases.length - 1
+    const t = setTimeout(() => {
+      if (onLast) goNext()
+      else setIntroPhraseIndex((n) => n + 1)
+    }, PHRASE_MS)
+    return () => clearTimeout(t)
+  }, [step, introPhraseIndex, introPhrases.length])
+
   // blessings — chained by each video's onEnded, not a timer.
   useEffect(() => {
     if (step !== 'blessings') return
@@ -206,6 +245,7 @@ export default function ProposalSequence({
       onClick={handleTapAdvance}
     >
       {proposal.backgroundAudioUrl && <audio ref={audioRef} src={proposal.backgroundAudioUrl} />}
+      {proposal.secondAudioUrl && <audio ref={secondAudioRef} src={proposal.secondAudioUrl} />}
 
       {/* Warms up the video during the letter, so by the time the video step
           actually mounts, the browser already has a head start on fetching
@@ -257,17 +297,22 @@ export default function ProposalSequence({
           </motion.div>
         )}
 
+        {step === 'blessingsIntro' && introPhrases[introPhraseIndex] && (
+          <motion.p
+            key={`intro-phrase-${introPhraseIndex}`}
+            {...fade}
+            className="max-w-md font-serif text-xl text-white sm:text-2xl"
+          >
+            {introPhrases[introPhraseIndex]}
+          </motion.p>
+        )}
+
         {step === 'blessings' && blessings[blessingIndex] && (
           <motion.div
             key={`blessing-${blessingIndex}`}
             {...fade}
             className="flex h-full w-full flex-col items-center justify-center gap-4"
           >
-            {blessingIndex === 0 && (
-              <p className="font-serif text-base text-white/80 sm:text-lg">
-                So I asked the people who&apos;ve known you longest.
-              </p>
-            )}
             <AutoplayVideo
               src={blessings[blessingIndex].videoUrl}
               caption={blessings[blessingIndex].name}

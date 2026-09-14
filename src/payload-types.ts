@@ -764,6 +764,14 @@ export interface Proposal {
    */
   personalVideo?: (number | null) | ProposalVideo;
   /**
+   * Shown phrase-by-phrase (same as your letter) right before the family blessing videos begin.
+   */
+  blessingsIntro?: string | null;
+  /**
+   * Starts the instant the first song stops — right as this intro appears — and plays quietly (5% volume) underneath the intro and the family videos, so it doesn't compete with them talking. Upload it under "Proposal Media" like the others.
+   */
+  secondAudio?: (number | null) | ProposalVideo;
+  /**
    * Plays back-to-back, in this order, right after your own video. Upload the videos themselves under "Blessing Videos" first.
    */
   blessings?:
@@ -809,6 +817,8 @@ export interface ProposalSelect<T extends boolean = true> {
   loveLetter?: T;
   backgroundAudio?: T;
   personalVideo?: T;
+  blessingsIntro?: T;
+  secondAudio?: T;
   blessings?:
     | T
     | {

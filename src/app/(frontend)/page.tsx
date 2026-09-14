@@ -50,6 +50,8 @@ const EMPTY_PROPOSAL: ProposalContent = {
   loveLetter: '',
   backgroundAudioUrl: null,
   personalVideoUrl: null,
+  blessingsIntro: '',
+  secondAudioUrl: null,
   blessings: [],
   cueMessage: 'Turn around.',
 }
@@ -76,10 +78,15 @@ async function getProposalContent(): Promise<ProposalContent> {
     const backgroundAudioUrl =
       (backgroundAudio && typeof backgroundAudio === 'object' && backgroundAudio.url) || null
 
+    const secondAudio = proposal.secondAudio as { url?: string | null } | number | null
+    const secondAudioUrl = (secondAudio && typeof secondAudio === 'object' && secondAudio.url) || null
+
     return {
       loveLetter: proposal.loveLetter || '',
       backgroundAudioUrl,
       personalVideoUrl,
+      blessingsIntro: proposal.blessingsIntro || '',
+      secondAudioUrl,
       blessings,
       cueMessage: proposal.cueMessage || 'Turn around.',
     }

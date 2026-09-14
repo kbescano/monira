@@ -41,6 +41,25 @@ export const Proposal: GlobalConfig = {
       },
     },
     {
+      name: 'blessingsIntro',
+      type: 'textarea',
+      label: 'Intro before the family videos',
+      admin: {
+        description:
+          'Shown phrase-by-phrase (same as your letter) right before the family blessing videos begin.',
+      },
+    },
+    {
+      name: 'secondAudio',
+      type: 'upload',
+      relationTo: 'proposal-videos',
+      label: 'Second background song',
+      admin: {
+        description:
+          'Starts the instant the first song stops — right as this intro appears — and plays quietly (5% volume) underneath the intro and the family videos, so it doesn\'t compete with them talking. Upload it under "Proposal Media" like the others.',
+      },
+    },
+    {
       name: 'blessings',
       type: 'array',
       label: 'Family blessing videos',
