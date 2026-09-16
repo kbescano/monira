@@ -38,7 +38,6 @@ export default async function LoginPage({
             <input
               name="password"
               type="password"
-              inputMode="numeric"
               autoComplete="current-password"
               required
               className="rounded-xl border border-rose/20 bg-white px-4 py-2.5 text-sm text-plum placeholder:text-plum/40 focus:border-rose/50 focus:outline-none"
