@@ -1,6 +1,6 @@
 import Link from 'next/link'
 import { getPayloadClient } from '@/lib/payload'
-import { getCurrentUser } from '@/lib/session'
+import { getCurrentUser, isGuestSession } from '@/lib/session'
 import { getViewOnceGateStatus } from '@/lib/viewOnceGate'
 import FloatingHearts from './components/FloatingHearts'
 import ReasonGenerator from './components/ReasonGenerator'
@@ -8,6 +8,7 @@ import RunawayKiss from './components/RunawayKiss'
 import TogetherCounter from './components/TogetherCounter'
 import QuizGame from './components/QuizGame'
 import ViewOnceGateNotice from './components/ViewOnceGateNotice'
+import GuestRestrictedNotice from './components/GuestRestrictedNotice'
 import { hero, nav } from './content'
 
 export const dynamic = 'force-dynamic'
@@ -44,10 +45,11 @@ async function getShowReasons(): Promise<boolean> {
 
 export default async function HomePage() {
   const currentUser = await getCurrentUser()
-  const [reasons, showReasons, gate] = await Promise.all([
+  const [reasons, showReasons, gate, isGuest] = await Promise.all([
     getReasons(),
     getShowReasons(),
     getViewOnceGateStatus(currentUser),
+    isGuestSession(),
   ])
 
   return (
@@ -72,8 +74,12 @@ export default async function HomePage() {
         {/* Reason generator — heading and button always show; when the
             toggle is off we just pass an empty list, so tapping quietly
             shows nothing instead of the whole section disappearing. Locked
-            ahead of all that if the View Once gate says Nira still owes sends. */}
-        {gate.locked ? (
+            ahead of all that if the View Once gate says Nira still owes
+            sends, or if a guest is looking — same restriction as
+            Letters/View Once, this is just for the two of them. */}
+        {isGuest ? (
+          <GuestRestrictedNotice section="reasons" />
+        ) : gate.locked ? (
           <ViewOnceGateNotice remaining={gate.remaining} />
         ) : (
           <div className="flex flex-col items-center gap-4 px-4 sm:px-0">
