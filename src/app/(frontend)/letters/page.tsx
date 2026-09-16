@@ -1,9 +1,10 @@
 import { getPayloadClient } from '@/lib/payload'
-import { getCurrentUser } from '@/lib/session'
+import { getCurrentUser, isGuestSession } from '@/lib/session'
 import { getViewOnceGateStatus } from '@/lib/viewOnceGate'
 import { otherPerson } from '@/lib/dailyPassword'
 import WriteLoveLetter from '../components/WriteLoveLetter'
 import ViewOnceGateNotice from '../components/ViewOnceGateNotice'
+import GuestRestrictedNotice from '../components/GuestRestrictedNotice'
 import LetterCard from './LetterCard'
 import PinnedLettersButton from './PinnedLettersButton'
 import { lettersPage } from '../content'
@@ -83,6 +84,14 @@ async function getLetters(): Promise<{ letters: Letter[]; failed: boolean }> {
 }
 
 export default async function LettersPage() {
+  if (await isGuestSession()) {
+    return (
+      <div className="min-h-screen bg-gradient-to-b from-blush via-cream to-cream">
+        <GuestRestrictedNotice section="Letters" />
+      </div>
+    )
+  }
+
   const currentUser = await getCurrentUser()
   const gate = await getViewOnceGateStatus(currentUser)
 

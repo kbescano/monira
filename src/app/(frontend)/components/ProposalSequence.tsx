@@ -96,31 +96,41 @@ function AutoplayVideo({
   }, [src])
 
   return (
-    <div className="flex h-full w-full flex-col items-center justify-center gap-3">
-      <div className="relative flex w-full flex-1 items-center justify-center overflow-hidden">
-        <video
-          ref={videoRef}
-          src={src}
-          playsInline
-          controls={false}
-          onEnded={onEnded}
-          onClick={(e) => e.stopPropagation()}
-          className="h-full max-h-[88vh] w-full max-w-[95vw] object-contain"
-        />
-        {needsTap && (
-          <button
-            onClick={(e) => {
-              e.stopPropagation()
-              videoRef.current?.play().catch(() => {})
-              setNeedsTap(false)
-            }}
-            className="absolute inset-0 flex items-center justify-center bg-black/50 text-lg text-white"
-          >
-            ▶ Tap to play
-          </button>
-        )}
-      </div>
-      {caption && <p className="font-serif text-lg text-white/90">{caption}</p>}
+    <div className="relative flex h-full w-full items-center justify-center overflow-hidden">
+      <video
+        ref={videoRef}
+        src={src}
+        playsInline
+        controls={false}
+        onEnded={onEnded}
+        onClick={(e) => e.stopPropagation()}
+        className="h-full max-h-[90vh] w-full max-w-[95vw] object-contain"
+      />
+      {needsTap && (
+        <button
+          onClick={(e) => {
+            e.stopPropagation()
+            videoRef.current?.play().catch(() => {})
+            setNeedsTap(false)
+          }}
+          className="absolute inset-0 flex items-center justify-center bg-black/50 text-lg text-white"
+        >
+          ▶ Tap to play
+        </button>
+      )}
+      {/* Overlaid on the video itself, like a subtitle, instead of sitting
+          in the leftover space below it — that space is exactly what mobile
+          browser chrome / the home-indicator area was covering up. */}
+      {caption && (
+        <div
+          className="pointer-events-none absolute inset-x-0 flex justify-center px-6"
+          style={{ bottom: 'calc(1.5rem + env(safe-area-inset-bottom))' }}
+        >
+          <p className="rounded-full bg-black/50 px-4 py-1.5 font-serif text-base text-white/90 backdrop-blur-sm sm:text-lg">
+            {caption}
+          </p>
+        </div>
+      )}
     </div>
   )
 }

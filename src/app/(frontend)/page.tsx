@@ -3,8 +3,7 @@ import { getPayloadClient } from '@/lib/payload'
 import { getCurrentUser } from '@/lib/session'
 import { getViewOnceGateStatus } from '@/lib/viewOnceGate'
 import FloatingHearts from './components/FloatingHearts'
-import ProposalGate from './components/ProposalGate'
-import type { ProposalContent } from './components/ProposalSequence'
+import ReasonGenerator from './components/ReasonGenerator'
 import RunawayKiss from './components/RunawayKiss'
 import TogetherCounter from './components/TogetherCounter'
 import QuizGame from './components/QuizGame'
@@ -29,81 +28,27 @@ async function getReasons(): Promise<string[]> {
   }
 }
 
-// Site-wide feature toggles — defaults to on/off as noted below if the
-// global hasn't been touched yet (Payload lazily creates it, returning field
-// defaults until someone actually saves it in /admin).
-async function getSettings(): Promise<{ showReasons: boolean; proposalActive: boolean }> {
+// Site-wide feature toggles — defaults to on if the global hasn't been
+// touched yet (Payload lazily creates it, returning field defaults until
+// someone actually saves it in /admin).
+async function getShowReasons(): Promise<boolean> {
   try {
     const payload = await getPayloadClient()
     const settings = await payload.findGlobal({ slug: 'settings' })
-    return {
-      showReasons: settings.showReasons !== false,
-      proposalActive: Boolean(settings.proposalActive),
-    }
+    return settings.showReasons !== false
   } catch (error) {
     console.error('Failed to load site settings from Payload:', error)
-    return { showReasons: true, proposalActive: false }
-  }
-}
-
-const EMPTY_PROPOSAL: ProposalContent = {
-  loveLetter: '',
-  backgroundAudioUrl: null,
-  personalVideoUrl: null,
-  blessingsIntro: '',
-  secondAudioUrl: null,
-  blessings: [],
-  cueMessage: 'Turn around.',
-}
-
-// Only fetched while Proposal mode is actually on — no point querying the
-// Proposal global on every single homepage load otherwise.
-async function getProposalContent(): Promise<ProposalContent> {
-  try {
-    const payload = await getPayloadClient()
-    const proposal = await payload.findGlobal({ slug: 'proposal', depth: 1 })
-
-    const blessings = (proposal.blessings ?? [])
-      .map((b) => {
-        const video = b.video as { url?: string | null } | number | null
-        if (!video || typeof video !== 'object' || !video.url) return null
-        return { name: b.name, videoUrl: video.url }
-      })
-      .filter((b): b is { name: string; videoUrl: string } => b !== null)
-
-    const personalVideo = proposal.personalVideo as { url?: string | null } | number | null
-    const personalVideoUrl = (personalVideo && typeof personalVideo === 'object' && personalVideo.url) || null
-
-    const backgroundAudio = proposal.backgroundAudio as { url?: string | null } | number | null
-    const backgroundAudioUrl =
-      (backgroundAudio && typeof backgroundAudio === 'object' && backgroundAudio.url) || null
-
-    const secondAudio = proposal.secondAudio as { url?: string | null } | number | null
-    const secondAudioUrl = (secondAudio && typeof secondAudio === 'object' && secondAudio.url) || null
-
-    return {
-      loveLetter: proposal.loveLetter || '',
-      backgroundAudioUrl,
-      personalVideoUrl,
-      blessingsIntro: proposal.blessingsIntro || '',
-      secondAudioUrl,
-      blessings,
-      cueMessage: proposal.cueMessage || 'Turn around.',
-    }
-  } catch (error) {
-    console.error('Failed to load proposal content from Payload:', error)
-    return EMPTY_PROPOSAL
+    return true
   }
 }
 
 export default async function HomePage() {
   const currentUser = await getCurrentUser()
-  const [reasons, settings, gate] = await Promise.all([
+  const [reasons, showReasons, gate] = await Promise.all([
     getReasons(),
-    getSettings(),
+    getShowReasons(),
     getViewOnceGateStatus(currentUser),
   ])
-  const proposal = settings.proposalActive ? await getProposalContent() : EMPTY_PROPOSAL
 
   return (
     <div className="relative overflow-hidden bg-gradient-to-b from-blush via-cream to-cream">
@@ -126,10 +71,8 @@ export default async function HomePage() {
 
         {/* Reason generator — heading and button always show; when the
             toggle is off we just pass an empty list, so tapping quietly
-            shows nothing instead of the whole section disappearing. While
-            Proposal mode is on, this same button launches the proposal
-            sequence instead. Locked ahead of all that if the View Once gate
-            says Nira still owes sends. */}
+            shows nothing instead of the whole section disappearing. Locked
+            ahead of all that if the View Once gate says Nira still owes sends. */}
         {gate.locked ? (
           <ViewOnceGateNotice remaining={gate.remaining} />
         ) : (
@@ -137,14 +80,9 @@ export default async function HomePage() {
             <h2 className="font-serif text-2xl text-berry sm:text-3xl">
               In case you forgot why I&apos;m obsessed with you
             </h2>
-            <ProposalGate
-              displayReasons={settings.showReasons ? reasons : []}
-              proposalActive={settings.proposalActive}
-              proposal={proposal}
-            />
+            <ReasonGenerator reasons={showReasons ? reasons : []} />
           </div>
         )}
-
 
         {/* Quiz */}
         <div className="flex flex-col items-center gap-4 px-4 sm:px-0">

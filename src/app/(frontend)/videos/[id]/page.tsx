@@ -1,6 +1,7 @@
 import { getPayloadClient } from '@/lib/payload'
-import { getCurrentUser } from '@/lib/session'
+import { getCurrentUser, isGuestSession } from '@/lib/session'
 import type { Person } from '@/lib/dailyPassword'
+import GuestRestrictedNotice from '../../components/GuestRestrictedNotice'
 import WatchVideoClient from './WatchVideoClient'
 
 export const dynamic = 'force-dynamic'
@@ -34,6 +35,14 @@ export default async function WatchVideoPage({
 }: {
   params: Promise<{ id: string }>
 }) {
+  if (await isGuestSession()) {
+    return (
+      <div className="min-h-screen bg-gradient-to-b from-blush via-cream to-cream">
+        <GuestRestrictedNotice section="View Once" />
+      </div>
+    )
+  }
+
   const { id } = await params
   const currentUser = await getCurrentUser()
   const { exists, uploadedBy, kind } = await videoSender(id, currentUser)

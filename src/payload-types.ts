@@ -725,10 +725,6 @@ export interface Setting {
    */
   memoriesHiddenAt?: string | null;
   /**
-   * While on, tapping the reason button on the Home page launches the proposal sequence instead of a normal reason — fill in its content under the "Proposal" global first. Safe to turn on and preview yourself beforehand; nothing is used up or deleted by watching it.
-   */
-  proposalActive?: boolean | null;
-  /**
    * When this AND the three "Show" toggles above are all on: Nira has to send 3 View Once items before Reasons, Letters, and Memories unlock for her. Ken is never gated by this. Once she's sent 3, it stays unlocked for good — reset the count below to make her do it again.
    */
   requireViewOnceGate?: boolean | null;
@@ -801,7 +797,6 @@ export interface SettingsSelect<T extends boolean = true> {
   lettersHiddenAt?: T;
   showMemories?: T;
   memoriesHiddenAt?: T;
-  proposalActive?: T;
   requireViewOnceGate?: T;
   niraViewOnceSentCount?: T;
   showSaved?: T;

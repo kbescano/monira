@@ -1,9 +1,10 @@
 import type { Where } from 'payload'
 import { getPayloadClient } from '@/lib/payload'
-import { getCurrentUser } from '@/lib/session'
+import { getCurrentUser, isGuestSession } from '@/lib/session'
 import type { Person } from '@/lib/dailyPassword'
 import UploadVideo from '../components/UploadVideo'
 import DeviceGate from '../components/DeviceGate'
+import GuestRestrictedNotice from '../components/GuestRestrictedNotice'
 import VideoListItem from './VideoListItem'
 
 export const dynamic = 'force-dynamic'
@@ -59,6 +60,14 @@ async function getPendingVideos(
 }
 
 export default async function VideosPage() {
+  if (await isGuestSession()) {
+    return (
+      <div className="min-h-screen bg-gradient-to-b from-blush via-cream to-cream">
+        <GuestRestrictedNotice section="View Once" />
+      </div>
+    )
+  }
+
   const currentUser = await getCurrentUser()
   const { videos, failed } = await getPendingVideos(currentUser)
 

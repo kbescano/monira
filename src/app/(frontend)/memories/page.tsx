@@ -2,11 +2,61 @@ import { getPayloadClient } from '@/lib/payload'
 import { getCurrentUser } from '@/lib/session'
 import { getViewOnceGateStatus } from '@/lib/viewOnceGate'
 import MemoriesGallery, { type MemoryItem } from '../components/MemoriesGallery'
+import ProposalReplay from '../components/ProposalReplay'
+import type { ProposalContent } from '../components/ProposalSequence'
 import UploadMemory from '../components/UploadMemory'
 import ViewOnceGateNotice from '../components/ViewOnceGateNotice'
 import { memoriesPage } from '../content'
 
 export const dynamic = 'force-dynamic'
+
+const EMPTY_PROPOSAL: ProposalContent = {
+  loveLetter: '',
+  backgroundAudioUrl: null,
+  personalVideoUrl: null,
+  blessingsIntro: '',
+  secondAudioUrl: null,
+  blessings: [],
+  cueMessage: 'Turn around.',
+}
+
+async function getProposalContent(): Promise<ProposalContent> {
+  try {
+    const payload = await getPayloadClient()
+    const proposal = await payload.findGlobal({ slug: 'proposal', depth: 1 })
+
+    const blessings = (proposal.blessings ?? [])
+      .map((b) => {
+        const video = b.video as { url?: string | null } | number | null
+        if (!video || typeof video !== 'object' || !video.url) return null
+        return { name: b.name, videoUrl: video.url }
+      })
+      .filter((b): b is { name: string; videoUrl: string } => b !== null)
+
+    const personalVideo = proposal.personalVideo as { url?: string | null } | number | null
+    const personalVideoUrl = (personalVideo && typeof personalVideo === 'object' && personalVideo.url) || null
+
+    const backgroundAudio = proposal.backgroundAudio as { url?: string | null } | number | null
+    const backgroundAudioUrl =
+      (backgroundAudio && typeof backgroundAudio === 'object' && backgroundAudio.url) || null
+
+    const secondAudio = proposal.secondAudio as { url?: string | null } | number | null
+    const secondAudioUrl = (secondAudio && typeof secondAudio === 'object' && secondAudio.url) || null
+
+    return {
+      loveLetter: proposal.loveLetter || '',
+      backgroundAudioUrl,
+      personalVideoUrl,
+      blessingsIntro: proposal.blessingsIntro || '',
+      secondAudioUrl,
+      blessings,
+      cueMessage: proposal.cueMessage || 'Turn around.',
+    }
+  } catch (error) {
+    console.error('Failed to load proposal content from Payload:', error)
+    return EMPTY_PROPOSAL
+  }
+}
 
 async function getMemories(): Promise<{ memories: MemoryItem[]; failed: boolean }> {
   try {
@@ -77,7 +127,7 @@ export default async function MemoriesPage() {
     )
   }
 
-  const { memories, failed } = await getMemories()
+  const [{ memories, failed }, proposal] = await Promise.all([getMemories(), getProposalContent()])
 
   return (
     <div className="min-h-screen bg-cream">
@@ -85,6 +135,8 @@ export default async function MemoriesPage() {
         <h1 className="font-script text-4xl text-berry sm:text-5xl">{memoriesPage.title}</h1>
         <p className="mt-2 text-sm text-plum/70 sm:text-base">{memoriesPage.subtitle}</p>
       </div>
+
+      <ProposalReplay proposal={proposal} />
 
       {memories.length === 0 ? (
         <div className="flex flex-col items-center gap-2 px-6 py-20 text-center">

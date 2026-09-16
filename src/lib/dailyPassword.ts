@@ -18,7 +18,7 @@ export type Person = 'Ken' | 'Nira'
 // Usernames are intentionally swapped — each person logs in with the other's
 // name. Both share the same rotating daily password.
 export const USERS: Record<string, Person> = {
-  niraforevs: 'Ken',
+  loveniraforever: 'Ken',
   keiraforevs: 'Nira',
 }
 
@@ -27,3 +27,11 @@ export function otherPerson(person: Person): Person {
 }
 
 export const AUTH_COOKIE = 'site_auth'
+
+// A third, deliberately-not-a-Person account for anyone else who needs a
+// peek at the site — fixed username/password (not the daily-rotating one),
+// and not part of USERS above since it doesn't map to either Ken or Nira.
+// Blocked from Letters and View Once at the page level (see
+// GuestRestrictedNotice) — everything else on the site is open to it.
+export const GUEST_USERNAME = 'guest'
+export const GUEST_PASSWORD = 'guest'

@@ -1,11 +1,14 @@
 import { NextResponse, type NextRequest } from 'next/server'
-import { AUTH_COOKIE, todaysPassword } from '@/lib/dailyPassword'
+import { AUTH_COOKIE, GUEST_PASSWORD, GUEST_USERNAME, todaysPassword } from '@/lib/dailyPassword'
 
 export function middleware(req: NextRequest) {
   const cookie = req.cookies.get(AUTH_COOKIE)?.value
-  const password = cookie?.split(':')[1]
+  const [person, password] = (cookie ?? '').split(':')
 
-  if (password === todaysPassword()) {
+  const validPersonAuth = password === todaysPassword()
+  const validGuestAuth = person === GUEST_USERNAME && password === GUEST_PASSWORD
+
+  if (validPersonAuth || validGuestAuth) {
     return NextResponse.next()
   }
 

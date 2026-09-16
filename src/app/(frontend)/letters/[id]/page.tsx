@@ -1,6 +1,7 @@
 import { getPayloadClient } from '@/lib/payload'
-import { getCurrentUser } from '@/lib/session'
+import { getCurrentUser, isGuestSession } from '@/lib/session'
 import { otherPerson } from '@/lib/dailyPassword'
+import GuestRestrictedNotice from '../../components/GuestRestrictedNotice'
 import ThreadView, { type Bubble } from './ThreadView'
 
 export const dynamic = 'force-dynamic'
@@ -48,6 +49,14 @@ async function getThread(id: string): Promise<{ root: Bubble | null; replies: Bu
 }
 
 export default async function LetterThreadPage({ params }: { params: Promise<{ id: string }> }) {
+  if (await isGuestSession()) {
+    return (
+      <div className="min-h-screen bg-gradient-to-b from-blush via-cream to-cream">
+        <GuestRestrictedNotice section="Letters" />
+      </div>
+    )
+  }
+
   const { id } = await params
   const [{ root, replies, to }, currentUser] = await Promise.all([getThread(id), getCurrentUser()])
 

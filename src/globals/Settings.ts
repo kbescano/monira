@@ -81,16 +81,6 @@ export const Settings: GlobalConfig = {
       },
     },
     {
-      name: 'proposalActive',
-      type: 'checkbox',
-      defaultValue: false,
-      label: 'Proposal mode',
-      admin: {
-        description:
-          'While on, tapping the reason button on the Home page launches the proposal sequence instead of a normal reason — fill in its content under the "Proposal" global first. Safe to turn on and preview yourself beforehand; nothing is used up or deleted by watching it.',
-      },
-    },
-    {
       name: 'requireViewOnceGate',
       type: 'checkbox',
       defaultValue: false,
