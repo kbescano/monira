@@ -14,15 +14,29 @@ function shuffled(length: number): number[] {
   return arr
 }
 
-export default function ReasonGenerator({ reasons }: { reasons: string[] }) {
+export default function ReasonGenerator({
+  reasons,
+  isGuest,
+}: {
+  reasons: string[]
+  // Guest sees the exact same button as everyone else — the restriction only
+  // shows up the moment they actually tap it, not before.
+  isGuest?: boolean
+}) {
   const [index, setIndex] = useState<number | null>(null)
   const [count, setCount] = useState(0)
+  const [guestBlocked, setGuestBlocked] = useState(false)
   // A "shuffle bag": a random-ordered queue of every reason. Draw from it
   // until empty, then reshuffle a new one — so it stays random each round,
   // but the whole set is always seen once before anything repeats.
   const bagRef = useRef<number[]>([])
 
   const showNext = () => {
+    if (isGuest) {
+      setGuestBlocked(true)
+      return
+    }
+
     // Nothing to draw from — either the reasons feature is toggled off (the
     // page passes an empty array in that case) or the list is genuinely
     // empty. Either way, tapping just quietly does nothing instead of the
@@ -59,22 +73,38 @@ export default function ReasonGenerator({ reasons }: { reasons: string[] }) {
 
       <div className="min-h-[6rem] w-full max-w-md px-4">
         <AnimatePresence mode="wait">
-          {index !== null && reasons[index] && (
-            <motion.p
-              key={index}
-              initial={{ opacity: 0, y: 12, scale: 0.96 }}
-              animate={{ opacity: 1, y: 0, scale: 1 }}
-              exit={{ opacity: 0, y: -12, scale: 0.96 }}
-              transition={{ duration: 0.35, ease: 'easeOut' }}
-              className="font-serif text-lg text-berry sm:text-xl"
-            >
-              &ldquo;{reasons[index]}&rdquo;
-            </motion.p>
+          {isGuest ? (
+            guestBlocked && (
+              <motion.p
+                key="guest-blocked"
+                initial={{ opacity: 0, y: 12, scale: 0.96 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                exit={{ opacity: 0, y: -12, scale: 0.96 }}
+                transition={{ duration: 0.35, ease: 'easeOut' }}
+                className="font-serif text-lg text-berry sm:text-xl"
+              >
+                🔒 This one&apos;s just for the two of them.
+              </motion.p>
+            )
+          ) : (
+            index !== null &&
+            reasons[index] && (
+              <motion.p
+                key={index}
+                initial={{ opacity: 0, y: 12, scale: 0.96 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                exit={{ opacity: 0, y: -12, scale: 0.96 }}
+                transition={{ duration: 0.35, ease: 'easeOut' }}
+                className="font-serif text-lg text-berry sm:text-xl"
+              >
+                &ldquo;{reasons[index]}&rdquo;
+              </motion.p>
+            )
           )}
         </AnimatePresence>
       </div>
 
-      {count >= 3 && (
+      {count >= 3 && !isGuest && (
         <p className="text-xs text-berry/60">
           {count} reasons deep and I&apos;m still not out of material. 😌
         </p>

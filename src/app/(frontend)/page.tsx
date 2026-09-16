@@ -8,7 +8,6 @@ import RunawayKiss from './components/RunawayKiss'
 import TogetherCounter from './components/TogetherCounter'
 import QuizGame from './components/QuizGame'
 import ViewOnceGateNotice from './components/ViewOnceGateNotice'
-import GuestRestrictedNotice from './components/GuestRestrictedNotice'
 import { hero, nav } from './content'
 
 export const dynamic = 'force-dynamic'
@@ -71,22 +70,21 @@ export default async function HomePage() {
         {/* Days together counter */}
         <TogetherCounter />
 
-        {/* Reason generator — heading and button always show; when the
-            toggle is off we just pass an empty list, so tapping quietly
-            shows nothing instead of the whole section disappearing. Locked
-            ahead of all that if the View Once gate says Nira still owes
-            sends, or if a guest is looking — same restriction as
-            Letters/View Once, this is just for the two of them. */}
-        {isGuest ? (
-          <GuestRestrictedNotice section="reasons" />
-        ) : gate.locked ? (
+        {/* Reason generator — heading and button always show, for guest too;
+            when the toggle is off we just pass an empty list, so tapping
+            quietly shows nothing instead of the whole section disappearing.
+            For a guest specifically, tapping reveals a restriction message
+            instead of a real reason — see ReasonGenerator's isGuest handling.
+            Locked ahead of all that if the View Once gate says Nira still
+            owes sends. */}
+        {gate.locked ? (
           <ViewOnceGateNotice remaining={gate.remaining} />
         ) : (
           <div className="flex flex-col items-center gap-4 px-4 sm:px-0">
             <h2 className="font-serif text-2xl text-berry sm:text-3xl">
               In case you forgot why I&apos;m obsessed with you
             </h2>
-            <ReasonGenerator reasons={showReasons ? reasons : []} />
+            <ReasonGenerator reasons={showReasons ? reasons : []} isGuest={isGuest} />
           </div>
         )}
 
