@@ -6,9 +6,9 @@ import ProposalSequence, { type ProposalContent } from './ProposalSequence'
 export default function ProposalReplay({ proposal }: { proposal: ProposalContent }) {
   const [open, setOpen] = useState(false)
 
-  // Nothing worth replaying if the letter and video were never filled in —
-  // stay invisible rather than offering a mostly-empty playback.
-  if (!proposal.loveLetter.trim() && !proposal.personalVideoUrl) return null
+  // Nothing worth replaying if the video was never filled in — stay
+  // invisible rather than offering an empty playback.
+  if (!proposal.personalVideoUrl) return null
 
   return (
     <>

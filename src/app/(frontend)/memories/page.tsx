@@ -11,13 +11,7 @@ import { memoriesPage } from '../content'
 export const dynamic = 'force-dynamic'
 
 const EMPTY_PROPOSAL: ProposalContent = {
-  loveLetter: '',
-  backgroundAudioUrl: null,
   personalVideoUrl: null,
-  blessingsIntro: '',
-  secondAudioUrl: null,
-  blessings: [],
-  cueMessage: 'Turn around.',
 }
 
 async function getProposalContent(): Promise<ProposalContent> {
@@ -25,32 +19,11 @@ async function getProposalContent(): Promise<ProposalContent> {
     const payload = await getPayloadClient()
     const proposal = await payload.findGlobal({ slug: 'proposal', depth: 1 })
 
-    const blessings = (proposal.blessings ?? [])
-      .map((b) => {
-        const video = b.video as { url?: string | null } | number | null
-        if (!video || typeof video !== 'object' || !video.url) return null
-        return { name: b.name, videoUrl: video.url }
-      })
-      .filter((b): b is { name: string; videoUrl: string } => b !== null)
-
     const personalVideo = proposal.personalVideo as { url?: string | null } | number | null
     const personalVideoUrl = (personalVideo && typeof personalVideo === 'object' && personalVideo.url) || null
 
-    const backgroundAudio = proposal.backgroundAudio as { url?: string | null } | number | null
-    const backgroundAudioUrl =
-      (backgroundAudio && typeof backgroundAudio === 'object' && backgroundAudio.url) || null
-
-    const secondAudio = proposal.secondAudio as { url?: string | null } | number | null
-    const secondAudioUrl = (secondAudio && typeof secondAudio === 'object' && secondAudio.url) || null
-
     return {
-      loveLetter: proposal.loveLetter || '',
-      backgroundAudioUrl,
       personalVideoUrl,
-      blessingsIntro: proposal.blessingsIntro || '',
-      secondAudioUrl,
-      blessings,
-      cueMessage: proposal.cueMessage || 'Turn around.',
     }
   } catch (error) {
     console.error('Failed to load proposal content from Payload:', error)

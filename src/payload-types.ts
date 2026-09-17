@@ -748,42 +748,9 @@ export interface Setting {
 export interface Proposal {
   id: number;
   /**
-   * Shown full-screen early in the sequence, right after her name.
-   */
-  loveLetter?: string | null;
-  /**
-   * Plays continuously underneath your letter and your own video — upload it under "Proposal Media" like the videos. Pick something roughly the length of the letter (a few seconds per comma/period) plus your video, since there's no automatic timing to force it to end exactly on cue anymore.
-   */
-  backgroundAudio?: (number | null) | ProposalVideo;
-  /**
-   * Plays right after the letter, before the family blessing videos — upload it under "Proposal Media" like the others.
+   * Plays right after her name appears — upload it under "Proposal Media". Closes itself the moment it ends, back to the page underneath.
    */
   personalVideo?: (number | null) | ProposalVideo;
-  /**
-   * Shown phrase-by-phrase (same as your letter) right before the family blessing videos begin.
-   */
-  blessingsIntro?: string | null;
-  /**
-   * Starts the instant the first song stops — right as this intro appears — and plays quietly (5% volume) underneath the intro and the family videos, so it doesn't compete with them talking. Upload it under "Proposal Media" like the others.
-   */
-  secondAudio?: (number | null) | ProposalVideo;
-  /**
-   * Plays back-to-back, in this order, right after your own video. Upload the videos themselves under "Blessing Videos" first.
-   */
-  blessings?:
-    | {
-        /**
-         * Shown under their video, e.g. "Mom", "Dad", "Her sister Jen".
-         */
-        name: string;
-        video: number | ProposalVideo;
-        id?: string | null;
-      }[]
-    | null;
-  /**
-   * The final screen, right after the family videos, right before you propose in person — keep it short. Whatever fits how you'll actually be standing together in that moment.
-   */
-  cueMessage?: string | null;
   updatedAt?: string | null;
   createdAt?: string | null;
 }
@@ -809,19 +776,7 @@ export interface SettingsSelect<T extends boolean = true> {
  * via the `definition` "proposal_select".
  */
 export interface ProposalSelect<T extends boolean = true> {
-  loveLetter?: T;
-  backgroundAudio?: T;
   personalVideo?: T;
-  blessingsIntro?: T;
-  secondAudio?: T;
-  blessings?:
-    | T
-    | {
-        name?: T;
-        video?: T;
-        id?: T;
-      };
-  cueMessage?: T;
   updatedAt?: T;
   createdAt?: T;
   globalType?: T;

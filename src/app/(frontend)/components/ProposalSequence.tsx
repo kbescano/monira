@@ -1,98 +1,51 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
-import { motion, AnimatePresence } from 'motion/react'
+import { motion } from 'motion/react'
 
-export type ProposalBlessing = { name: string; videoUrl: string }
 export type ProposalContent = {
-  loveLetter: string
-  backgroundAudioUrl: string | null
   personalVideoUrl: string | null
-  blessingsIntro: string
-  secondAudioUrl: string | null
-  blessings: ProposalBlessing[]
-  cueMessage: string
 }
 
-type Step = 'opener' | 'letter' | 'video' | 'blessingsIntro' | 'blessings' | 'cue'
-const STEP_ORDER: Step[] = ['opener', 'letter', 'video', 'blessingsIntro', 'blessings', 'cue']
+// Longest AutoplayVideo will ever wait on canplaythrough before starting
+// anyway — a safety net so a genuinely bad connection can't leave her
+// staring at the loading heart forever during the actual moment.
+const MAX_VIDEO_BUFFER_MS = 90_000
 
-// The first song starts the instant the sequence loads (before her name even
-// appears) and plays continuously through the letter and your own video,
-// then stops the moment the family-videos section starts. Since the
-// letter's own length is fixed by how many phrases it has (not a shared
-// budget anymore), how well the song's ending lines up with your video's
-// ending now comes down to picking a song roughly the right length for the
-// two combined, rather than something the code can force exactly.
-const FIRST_AUDIO_STEPS: Step[] = ['opener', 'letter', 'video']
-
-// The second song picks up the instant the first one stops — right as the
-// intro before the family videos appears — and stays on, quietly, through
-// the family videos themselves so it doesn't compete with them talking.
-const SECOND_AUDIO_STEPS: Step[] = ['blessingsIntro', 'blessings']
-const SECOND_AUDIO_VOLUME = 0.05
-
-// Fixed hold per phrase in the letter / blessings intro.
-const PHRASE_MS = 3000
-
-const fade = {
-  initial: { opacity: 0, y: 12 },
-  animate: { opacity: 1, y: 0 },
-  exit: { opacity: 0, y: -12 },
-  transition: { duration: 0.5, ease: 'easeOut' as const },
-}
-
-// The video's own entrance skips the fade-in — it should feel like it starts
-// right away the moment the letter's done, not drift in half a second later.
-const instant = {
-  initial: { opacity: 1 },
-  animate: { opacity: 1 },
-  exit: { opacity: 0 },
-  transition: { duration: 0.15 },
-}
-
-/** Splits text into short phrases at every comma, period, "!", or "?" —
- * shown one at a time rather than as one long block or full sentences.
- * Paragraph breaks are split first so a phrase never spans two paragraphs.
- * Used for both the letter and the blessings intro. */
-function splitIntoPhrases(text: string): string[] {
-  return text
-    .split(/\n\s*\n/)
-    .flatMap((paragraph) =>
-      paragraph
-        .trim()
-        .split(/(?<=[,.!?])\s+/)
-        .map((s) => s.trim()),
-    )
-    .filter(Boolean)
-}
-
-/** A single autoplaying video — attempts autoplay, falls back to a
- * tap-to-play overlay if the browser blocks it (mobile browsers often only
- * allow autoplay-with-sound on the video directly tied to the user's tap,
- * not one chained in afterward via onEnded). Used for both your own video
- * and each family blessing. */
-function AutoplayVideo({
-  src,
-  caption,
-  onEnded,
-}: {
-  src: string
-  caption?: string
-  onEnded: () => void
-}) {
+/** A single autoplaying video — waits behind a loading heart icon for the
+ * browser's own "this should play through without stalling" signal before
+ * starting, rather than starting immediately and risking a stall mid-way
+ * through a large file. Falls back to a tap-to-play overlay if autoplay
+ * itself gets blocked once ready (mobile browsers often only allow
+ * autoplay-with-sound on the video directly tied to the user's tap, not one
+ * chained in afterward). */
+function AutoplayVideo({ src, onEnded }: { src: string; onEnded: () => void }) {
   const videoRef = useRef<HTMLVideoElement>(null)
+  const startedRef = useRef(false)
   const [needsTap, setNeedsTap] = useState(false)
+  const [ready, setReady] = useState(false)
 
-  useEffect(() => {
-    setNeedsTap(false)
+  const startPlaying = () => {
+    if (startedRef.current) return
+    startedRef.current = true
+    setReady(true)
     const el = videoRef.current
     if (!el) return
-    el.currentTime = 0
     const playPromise = el.play()
     if (playPromise && typeof playPromise.catch === 'function') {
       playPromise.catch(() => setNeedsTap(true))
     }
+  }
+
+  useEffect(() => {
+    startedRef.current = false
+    setReady(false)
+    setNeedsTap(false)
+    const el = videoRef.current
+    if (el) el.currentTime = 0
+
+    const maxTimer = setTimeout(startPlaying, MAX_VIDEO_BUFFER_MS)
+    return () => clearTimeout(maxTimer)
   }, [src])
 
   return (
@@ -101,12 +54,27 @@ function AutoplayVideo({
         ref={videoRef}
         src={src}
         playsInline
-        controls={false}
+        controls
+        controlsList="nodownload"
+        preload="auto"
+        onCanPlayThrough={startPlaying}
         onEnded={onEnded}
-        onClick={(e) => e.stopPropagation()}
-        className="h-full max-h-[90vh] w-full max-w-[95vw] object-contain"
+        className="h-full w-full object-contain"
       />
-      {needsTap && (
+
+      {!ready && (
+        <div className="absolute inset-0 flex items-center justify-center bg-black">
+          <motion.span
+            animate={{ scale: [1, 1.2, 1] }}
+            transition={{ duration: 1, repeat: Infinity, ease: 'easeInOut' }}
+            className="block text-6xl"
+          >
+            ❤️
+          </motion.span>
+        </div>
+      )}
+
+      {ready && needsTap && (
         <button
           onClick={(e) => {
             e.stopPropagation()
@@ -117,19 +85,6 @@ function AutoplayVideo({
         >
           ▶ Tap to play
         </button>
-      )}
-      {/* Overlaid on the video itself, like a subtitle, instead of sitting
-          in the leftover space below it — that space is exactly what mobile
-          browser chrome / the home-indicator area was covering up. */}
-      {caption && (
-        <div
-          className="pointer-events-none absolute inset-x-0 flex justify-center px-6"
-          style={{ bottom: 'calc(1.5rem + env(safe-area-inset-bottom))' }}
-        >
-          <p className="rounded-full bg-black/50 px-4 py-1.5 font-serif text-base text-white/90 backdrop-blur-sm sm:text-lg">
-            {caption}
-          </p>
-        </div>
       )}
     </div>
   )
@@ -142,137 +97,16 @@ export default function ProposalSequence({
   proposal: ProposalContent
   onDone: () => void
 }) {
-  const [step, setStep] = useState<Step>('opener')
-  const [phraseIndex, setPhraseIndex] = useState(0)
-  const [introPhraseIndex, setIntroPhraseIndex] = useState(0)
-  const [blessingIndex, setBlessingIndex] = useState(0)
-  const audioRef = useRef<HTMLAudioElement>(null)
-  const secondAudioRef = useRef<HTMLAudioElement>(null)
-
-  const blessings = proposal.blessings
-  const phrases = splitIntoPhrases(proposal.loveLetter)
-  const introPhrases = splitIntoPhrases(proposal.blessingsIntro)
-
-  const goNext = () => {
-    setStep((current) => {
-      const i = STEP_ORDER.indexOf(current)
-      return i < STEP_ORDER.length - 1 ? STEP_ORDER[i + 1] : current
-    })
-  }
-
-  // First song — see FIRST_AUDIO_STEPS above.
+  // Nothing to show at all if there's no video yet — close immediately
+  // rather than leaving a blank black screen up.
   useEffect(() => {
-    const el = audioRef.current
-    if (!el || !proposal.backgroundAudioUrl) return
-    if (FIRST_AUDIO_STEPS.includes(step)) {
-      if (el.paused) el.play().catch(() => {})
-    } else if (!el.paused) {
-      el.pause()
-    }
-  }, [step, proposal.backgroundAudioUrl])
+    if (!proposal.personalVideoUrl) onDone()
+  }, [proposal.personalVideoUrl, onDone])
 
-  // Second song — see SECOND_AUDIO_STEPS above. Volume is reset on every run
-  // of this effect (harmless if already set) so it's always quiet, however
-  // it got started.
-  useEffect(() => {
-    const el = secondAudioRef.current
-    if (!el || !proposal.secondAudioUrl) return
-    el.volume = SECOND_AUDIO_VOLUME
-    if (SECOND_AUDIO_STEPS.includes(step)) {
-      if (el.paused) el.play().catch(() => {})
-    } else if (!el.paused) {
-      el.pause()
-    }
-  }, [step, proposal.secondAudioUrl])
-
-  // opener — just her name, a moment to notice something's different.
-  useEffect(() => {
-    if (step !== 'opener') return
-    const t = setTimeout(goNext, 2400)
-    return () => clearTimeout(t)
-  }, [step])
-
-  // letter — one phrase at a time (split on comma/period/!/?), each held
-  // for a fixed PHRASE_MS.
-  useEffect(() => {
-    if (step !== 'letter') return
-    if (phrases.length === 0) {
-      goNext()
-      return
-    }
-    const onLast = phraseIndex >= phrases.length - 1
-    const t = setTimeout(() => {
-      if (onLast) goNext()
-      else setPhraseIndex((n) => n + 1)
-    }, PHRASE_MS)
-    return () => clearTimeout(t)
-  }, [step, phraseIndex, phrases.length])
-
-  // video — your own video message, chained by its own onEnded, not a timer.
-  useEffect(() => {
-    if (step !== 'video') return
-    if (!proposal.personalVideoUrl) goNext()
-  }, [step, proposal.personalVideoUrl])
-
-  // blessingsIntro — same phrase-by-phrase treatment as the letter, right
-  // before the family videos begin.
-  useEffect(() => {
-    if (step !== 'blessingsIntro') return
-    if (introPhrases.length === 0) {
-      goNext()
-      return
-    }
-    const onLast = introPhraseIndex >= introPhrases.length - 1
-    const t = setTimeout(() => {
-      if (onLast) goNext()
-      else setIntroPhraseIndex((n) => n + 1)
-    }, PHRASE_MS)
-    return () => clearTimeout(t)
-  }, [step, introPhraseIndex, introPhrases.length])
-
-  // blessings — chained by each video's onEnded, not a timer.
-  useEffect(() => {
-    if (step !== 'blessings') return
-    if (blessings.length === 0) goNext()
-  }, [step, blessings.length])
-
-  // Tapping anywhere nudges things forward early — a safety net if a step
-  // feels too slow in the actual moment. Not wired up during the video/
-  // blessings steps (each video's own onEnded/tap-to-play handles that) or
-  // on the final cue (nothing left to advance to — that's the real thing now).
-  const handleTapAdvance = () => {
-    if (step === 'video' || step === 'blessings' || step === 'cue') return
-    goNext()
-  }
-
-  const isFullBleedVideo = step === 'video' || step === 'blessings'
+  if (!proposal.personalVideoUrl) return null
 
   return (
-    <div
-      className={`fixed inset-0 z-[100] flex flex-col items-center justify-center bg-black text-center ${
-        isFullBleedVideo ? '' : 'gap-6 px-6'
-      }`}
-      onClick={handleTapAdvance}
-    >
-      {proposal.backgroundAudioUrl && <audio ref={audioRef} src={proposal.backgroundAudioUrl} />}
-      {proposal.secondAudioUrl && <audio ref={secondAudioRef} src={proposal.secondAudioUrl} />}
-
-      {/* Warms up the video during the letter, so by the time the video step
-          actually mounts, the browser already has a head start on fetching
-          it instead of starting from zero — same URL, so the real player
-          picks up wherever this got to. Not rendered once we're actually on
-          the video step, so there's only ever one element pulling the file. */}
-      {proposal.personalVideoUrl && (step === 'opener' || step === 'letter') && (
-        <video
-          key="preload-video"
-          src={proposal.personalVideoUrl}
-          preload="auto"
-          muted
-          playsInline
-          style={{ position: 'absolute', width: 1, height: 1, opacity: 0, pointerEvents: 'none' }}
-        />
-      )}
-
+    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black text-center">
       <button
         onClick={(e) => {
           e.stopPropagation()
@@ -284,62 +118,10 @@ export default function ProposalSequence({
         ✕
       </button>
 
-      <AnimatePresence mode="wait">
-        {step === 'opener' && (
-          <motion.h1 key="opener" {...fade} className="font-script text-5xl text-white sm:text-6xl">
-            Nira
-          </motion.h1>
-        )}
-
-        {step === 'letter' && phrases[phraseIndex] && (
-          <motion.p
-            key={`phrase-${phraseIndex}`}
-            {...fade}
-            className="max-w-md font-serif text-xl text-white sm:text-2xl"
-          >
-            {phrases[phraseIndex]}
-          </motion.p>
-        )}
-
-        {step === 'video' && proposal.personalVideoUrl && (
-          <motion.div key="video" {...instant} className="flex h-full w-full items-center justify-center">
-            <AutoplayVideo src={proposal.personalVideoUrl} onEnded={goNext} />
-          </motion.div>
-        )}
-
-        {step === 'blessingsIntro' && introPhrases[introPhraseIndex] && (
-          <motion.p
-            key={`intro-phrase-${introPhraseIndex}`}
-            {...fade}
-            className="max-w-md font-serif text-xl text-white sm:text-2xl"
-          >
-            {introPhrases[introPhraseIndex]}
-          </motion.p>
-        )}
-
-        {step === 'blessings' && blessings[blessingIndex] && (
-          <motion.div
-            key={`blessing-${blessingIndex}`}
-            {...fade}
-            className="flex h-full w-full flex-col items-center justify-center gap-4"
-          >
-            <AutoplayVideo
-              src={blessings[blessingIndex].videoUrl}
-              caption={blessings[blessingIndex].name}
-              onEnded={() => {
-                if (blessingIndex < blessings.length - 1) setBlessingIndex((n) => n + 1)
-                else goNext()
-              }}
-            />
-          </motion.div>
-        )}
-
-        {step === 'cue' && (
-          <motion.p key="cue" {...fade} className="font-script text-5xl text-white sm:text-6xl">
-            {proposal.cueMessage || 'Turn around.'}
-          </motion.p>
-        )}
-      </AnimatePresence>
+      {/* The video ending IS the cue — nothing left to show after it, so
+          this closes the whole thing straight back to whatever's
+          underneath (the real moment happens in person right as it ends). */}
+      <AutoplayVideo src={proposal.personalVideoUrl} onEnded={onDone} />
     </div>
   )
 }
