@@ -1,5 +1,5 @@
 import { getPayloadClient } from '@/lib/payload'
-import { getCurrentUser } from '@/lib/session'
+import { getCurrentUser, isGuestSession } from '@/lib/session'
 import { getViewOnceGateStatus } from '@/lib/viewOnceGate'
 import MemoriesGallery, { type MemoryItem } from '../components/MemoriesGallery'
 import ProposalReplay from '../components/ProposalReplay'
@@ -100,7 +100,11 @@ export default async function MemoriesPage() {
     )
   }
 
-  const [{ memories, failed }, proposal] = await Promise.all([getMemories(), getProposalContent()])
+  const [{ memories, failed }, proposal, isGuest] = await Promise.all([
+    getMemories(),
+    getProposalContent(),
+    isGuestSession(),
+  ])
 
   return (
     <div className="min-h-screen bg-cream">
@@ -124,7 +128,7 @@ export default async function MemoriesPage() {
           </p>
         </div>
       ) : (
-        <MemoriesGallery memories={memories} />
+        <MemoriesGallery memories={memories} isGuest={isGuest} />
       )}
 
       <UploadMemory currentUser={currentUser} />

@@ -28,7 +28,13 @@ function formatDate(value: string | null) {
   }
 }
 
-export default function MemoriesGallery({ memories }: { memories: MemoryItem[] }) {
+export default function MemoriesGallery({
+  memories,
+  isGuest = false,
+}: {
+  memories: MemoryItem[]
+  isGuest?: boolean
+}) {
   const [openIndex, setOpenIndex] = useState<number | null>(null)
 
   const close = () => setOpenIndex(null)
@@ -53,26 +59,45 @@ export default function MemoriesGallery({ memories }: { memories: MemoryItem[] }
   return (
     <>
       <div className="grid grid-cols-3 gap-[2px] sm:grid-cols-3 sm:gap-1 md:grid-cols-4 md:gap-1.5">
-        {memories.map((memory, i) => (
-          <button
-            key={memory.id}
-            onClick={() => setOpenIndex(i)}
-            className="tap-shrink group relative aspect-square overflow-hidden bg-blush"
-          >
-            <Image
-              src={memory.imageUrl}
-              alt={memory.imageAlt}
-              fill
-              sizes="(max-width: 640px) 33vw, (max-width: 768px) 33vw, 25vw"
-              className="object-cover transition duration-300 group-hover:scale-105"
-            />
-            <div className="pointer-events-none absolute inset-0 flex items-end bg-gradient-to-t from-black/40 via-transparent to-transparent opacity-0 transition-opacity duration-200 group-hover:opacity-100">
-              <span className="p-2 text-left text-xs font-medium text-white sm:text-sm">
-                {memory.title}
-              </span>
+        {memories.map((memory, i) =>
+          isGuest ? (
+            <div
+              key={memory.id}
+              aria-hidden="true"
+              className="relative aspect-square overflow-hidden bg-blush"
+            >
+              <Image
+                src={memory.imageUrl}
+                alt=""
+                fill
+                sizes="(max-width: 640px) 33vw, (max-width: 768px) 33vw, 25vw"
+                className="scale-110 object-cover blur-md"
+              />
+              <div className="absolute inset-0 flex items-center justify-center bg-black/20">
+                <span className="text-lg">🔒</span>
+              </div>
             </div>
-          </button>
-        ))}
+          ) : (
+            <button
+              key={memory.id}
+              onClick={() => setOpenIndex(i)}
+              className="tap-shrink group relative aspect-square overflow-hidden bg-blush"
+            >
+              <Image
+                src={memory.imageUrl}
+                alt={memory.imageAlt}
+                fill
+                sizes="(max-width: 640px) 33vw, (max-width: 768px) 33vw, 25vw"
+                className="object-cover transition duration-300 group-hover:scale-105"
+              />
+              <div className="pointer-events-none absolute inset-0 flex items-end bg-gradient-to-t from-black/40 via-transparent to-transparent opacity-0 transition-opacity duration-200 group-hover:opacity-100">
+                <span className="p-2 text-left text-xs font-medium text-white sm:text-sm">
+                  {memory.title}
+                </span>
+              </div>
+            </button>
+          ),
+        )}
       </div>
 
       <AnimatePresence>
