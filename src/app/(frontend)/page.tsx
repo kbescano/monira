@@ -9,7 +9,7 @@ import RunawayKiss from './components/RunawayKiss'
 import TogetherCounter from './components/TogetherCounter'
 import QuizGame from './components/QuizGame'
 import ViewOnceGateNotice from './components/ViewOnceGateNotice'
-import { hero, nav } from './content'
+import { apartSince, hero, nav, saidYesAt } from './content'
 
 export const dynamic = 'force-dynamic'
 
@@ -71,6 +71,20 @@ export default async function HomePage() {
 
           {/* Days together counter */}
           <TogetherCounter />
+
+          {/* Since she said yes */}
+          <TogetherCounter
+            since={saidYesAt}
+            title="Since you said yes 💍"
+            footnote="(still can't stop smiling)"
+          />
+
+          {/* Apart counter */}
+          <TogetherCounter
+            since={apartSince}
+            title="Time we've been apart:"
+            footnote="(every second is one closer to seeing you again)"
+          />
 
           {/* Reason generator — heading and button always show, for guest too;
             when the toggle is off we just pass an empty list, so tapping

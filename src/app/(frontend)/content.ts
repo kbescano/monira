@@ -9,6 +9,12 @@ export const herName = 'You'
 /** The date it all started — used for the "days together" counter. Format: YYYY-MM-DD. */
 export const togetherSince = '2025-01-02'
 
+/** When they last parted ways — used for the "apart" counter. Manila time. */
+export const apartSince = '2026-09-19T08:30:00+08:00'
+
+/** The moment she said yes — used for the "since she said yes" counter. Manila time. */
+export const saidYesAt = '2026-09-15T16:45:00+08:00'
+
 export const hero = {
   eyebrow: "A tiny app. For my one and only.",
   title: `For ${herName}, obviously.`,

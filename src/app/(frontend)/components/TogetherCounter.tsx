@@ -3,8 +3,8 @@
 import { useEffect, useState } from 'react'
 import { togetherSince } from '../content'
 
-function getElapsed() {
-  const start = new Date(togetherSince).getTime()
+function getElapsed(since: string) {
+  const start = new Date(since).getTime()
   const now = Date.now()
   const diff = Math.max(now - start, 0)
 
@@ -16,14 +16,22 @@ function getElapsed() {
   return { days, hours, minutes, seconds }
 }
 
-export default function TogetherCounter() {
+export default function TogetherCounter({
+  since = togetherSince,
+  title = 'Time you’ve put up with me:',
+  footnote = '(and counting, hopefully forever)',
+}: {
+  since?: string
+  title?: string
+  footnote?: string
+}) {
   const [elapsed, setElapsed] = useState<ReturnType<typeof getElapsed> | null>(null)
 
   useEffect(() => {
-    setElapsed(getElapsed())
-    const id = setInterval(() => setElapsed(getElapsed()), 1000)
+    setElapsed(getElapsed(since))
+    const id = setInterval(() => setElapsed(getElapsed(since)), 1000)
     return () => clearInterval(id)
-  }, [])
+  }, [since])
 
   if (!elapsed) return null
 
@@ -36,7 +44,7 @@ export default function TogetherCounter() {
 
   return (
     <div className="flex flex-col items-center gap-2 text-center">
-      <p className="text-sm text-berry/70">Time you&apos;ve put up with me:</p>
+      <p className="text-sm text-berry/70">{title}</p>
       <div className="flex gap-3 sm:gap-4">
         {units.map(([value, label]) => (
           <div
@@ -52,7 +60,7 @@ export default function TogetherCounter() {
           </div>
         ))}
       </div>
-      <p className="text-xs text-berry/50">(and counting, hopefully forever)</p>
+      <p className="text-xs text-berry/50">{footnote}</p>
     </div>
   )
 }
