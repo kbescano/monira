@@ -14,7 +14,7 @@ const CIRCUMFERENCE = 2 * Math.PI * RADIUS
 const HOLD_THRESHOLD_MS = 220
 // Applies to any final file — recorded, captured, or picked from the
 // library. It vanishes after one view anyway, so this is generous.
-const MAX_BYTES = 100 * 1024 * 1024
+const MAX_BYTES = 500 * 1024 * 1024
 
 type Status = 'idle' | 'uploading' | 'error'
 type Mode = 'camera' | 'voice' | 'preview'
@@ -30,22 +30,6 @@ function pickMimeType(): string | undefined {
     'video/webm',
   ]
   return candidates.find((c) => MediaRecorder.isTypeSupported(c))
-}
-
-function readDuration(file: File): Promise<number> {
-  return new Promise((resolve, reject) => {
-    const video = document.createElement('video')
-    video.preload = 'metadata'
-    video.onloadedmetadata = () => {
-      URL.revokeObjectURL(video.src)
-      resolve(video.duration)
-    }
-    video.onerror = () => {
-      URL.revokeObjectURL(video.src)
-      reject(new Error('Could not read that file.'))
-    }
-    video.src = URL.createObjectURL(file)
-  })
 }
 
 export default function UploadVideo({ currentUser }: { currentUser: Person | null }) {
@@ -255,21 +239,12 @@ export default function UploadVideo({ currentUser }: { currentUser: Person | nul
     setError(null)
     const isImage = f.type.startsWith('image/')
 
-    if (!isImage) {
-      if (f.size > MAX_BYTES) {
-        setError('That video is a bit too big (100MB max) — try a shorter clip.')
-        return
-      }
-      try {
-        const duration = await readDuration(f)
-        if (duration > 60.5) {
-          setError('Videos must be 60 seconds or under — trim it first.')
-          return
-        }
-      } catch {
-        // If duration can't be read, let the upload attempt happen anyway
-        // rather than blocking on a browser quirk.
-      }
+    // Only the in-app recorder is held to 60 seconds (it auto-stops itself —
+    // see MAX_MS). A file picked from the camera roll has no duration cap,
+    // just the same size cap as everything else.
+    if (!isImage && f.size > MAX_BYTES) {
+      setError('That video is a bit too big (500MB max) — try a shorter clip.')
+      return
     }
 
     stopStream()
@@ -309,7 +284,7 @@ export default function UploadVideo({ currentUser }: { currentUser: Person | nul
       return
     }
     if (file.size > MAX_BYTES) {
-      setError('That file is a bit too big (100MB max).')
+      setError('That file is a bit too big (500MB max).')
       return
     }
     setError(null)
@@ -330,10 +305,11 @@ export default function UploadVideo({ currentUser }: { currentUser: Person | nul
       const mimeType =
         file.type || (kind === 'photo' ? 'image/jpeg' : kind === 'voice' ? 'audio/webm' : 'video/webm')
 
-      // Recordings can run up to 100MB — Vercel caps an incoming request
-      // body well under that, so the file goes straight from this browser
-      // to R2 with a presigned URL (bypassing that cap entirely), and only
-      // the small JSON needed to register the doc goes through /api/videos.
+      // Recordings can run up to 500MB — way past what a serverless
+      // function's request body can take, so the file goes straight from
+      // this browser to R2 with a presigned URL (bypassing that cap
+      // entirely), and only the small JSON needed to register the doc goes
+      // through /api/videos.
       const presignRes = await fetch('/api/storage-s3-generate-signed-url', {
         method: 'POST',
         credentials: 'include',

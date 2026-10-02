@@ -5,7 +5,7 @@ A tiny, two-page romantic site:
 - **Home** — an interactive, funny-but-romantic landing page (floating hearts, a "why I love you" reason generator, a runaway kiss button, a live "time together" counter).
 - **Memories** — an Instagram-style photo grid. Each memory has a title, description, and image, managed through the Payload admin dashboard.
 
-Built with Next.js 15, Payload CMS 3, Postgres (Neon), image hosting via Cloudinary, and deployed on Vercel.
+Built with Next.js 15, Payload CMS 3, Postgres (Neon), image hosting via Cloudinary, and deployed on Netlify.
 
 ## 1. Personalize it
 
@@ -17,7 +17,7 @@ You'll need free accounts with each of these (create them yourself in your brows
 
 1. **[Neon](https://neon.tech)** — create a project, then copy the **pooled connection string** from the dashboard.
 2. **[Cloudinary](https://cloudinary.com)** — from the dashboard home, grab your **Cloud name**, **API key**, and **API secret**.
-3. **[Vercel](https://vercel.com)** — for deployment (step 5).
+3. **[Netlify](https://netlify.com)** — for deployment (step 5).
 
 Copy `.env.example` to `.env` and fill in the values:
 
@@ -44,15 +44,9 @@ Visit [http://localhost:3000](http://localhost:3000) for the site, and [http://l
 
 Log into `/admin` → **Memories** → **Create New**. Upload a photo (it's stored on Cloudinary automatically), write a title + description, and it shows up on the `/memories` page immediately, newest first.
 
-## 5. Deploy to Vercel
+## 5. Deploy to Netlify
 
-```bash
-vercel
-```
-
-Or connect the GitHub repo in the Vercel dashboard. Either way, add the same environment variables from your `.env` (`DATABASE_URI`, `PAYLOAD_SECRET`, `CLOUDINARY_CLOUD_NAME`, `CLOUDINARY_API_KEY`, `CLOUDINARY_API_SECRET`) in the Vercel project's **Settings → Environment Variables**.
-
-Once it's live, update the Vercel domain in [`next.config.mjs`](next.config.mjs) (`images.remotePatterns`) if you use a custom domain.
+Connect the GitHub repo in the Netlify dashboard (build settings come from [`netlify.toml`](netlify.toml)), then add the environment variables from your `.env` under **Site configuration → Environment variables**: `DATABASE_URI`, `PAYLOAD_SECRET`, `R2_BUCKET`, `R2_ENDPOINT`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY` (plus the `CLOUDINARY_*` ones if still used).
 
 ## Project structure
 

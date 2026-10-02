@@ -22,11 +22,6 @@ const nextConfig = {
         protocol: 'https',
         hostname: 'res.cloudinary.com',
       },
-      {
-        // Add your Vercel domain here once it's live
-        protocol: 'https',
-        hostname: 'loveniraalways.vercel.app',
-      },
     ],
     unoptimized: true,
   },

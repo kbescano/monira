@@ -101,6 +101,16 @@ export default buildConfig({
       clientUploads: {
         access: () => true,
       },
+      // The proposal video is hundreds of MB — proxying it through a
+      // serverless function breaks on Netlify (20 MB streamed-response cap)
+      // and is slower than R2 directly anyway, so its file route redirects to
+      // a short-lived presigned R2 URL. Only this collection: View Once media
+      // and voice notes keep streaming through the app so they never get a
+      // shareable direct link. The proposal video was already public-read.
+      signedDownloads: {
+        expiresIn: 7200,
+        shouldUseSignedURL: ({ collection }) => collection.slug === 'proposal-videos',
+      },
     }),
   ],
 })

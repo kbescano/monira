@@ -1,0 +1,7 @@
+[build]
+  # bun.lock is the source of truth for versions; Netlify's auto-install only
+  # keys off the older bun.lockb, so install explicitly.
+  command = "bun install --frozen-lockfile && bun run build"
+
+[build.environment]
+  NODE_VERSION = "22"
