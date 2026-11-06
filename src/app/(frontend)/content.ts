@@ -4,7 +4,7 @@
 // ─────────────────────────────────────────────────────────────
 
 /** Her name (or nickname), used across the Home page. */
-export const herName = 'You'
+export const herName = 'Nira'
 
 /** The date it all started — used for the "days together" counter. Format: YYYY-MM-DD. */
 export const togetherSince = '2025-01-02'
@@ -14,6 +14,16 @@ export const apartSince = '2026-09-19T08:30:00+08:00'
 
 /** The moment she said yes — used for the "since she said yes" counter. Manila time. */
 export const saidYesAt = '2026-09-15T16:45:00+08:00'
+
+/**
+ * Music for the "Fall into forever" reasons dive — a YouTube video ID (the part
+ * after v= in the link). It plays through YouTube's own embedded player, and
+ * only works for videos that allow embedding.
+ */
+export const reasonsMusic = { videoId: '-BjZmE2gtdo' }
+
+/** The closing line at the very bottom of the Home page. */
+export const signOff = 'Always yours.'
 
 export const hero = {
   eyebrow: "A tiny app. For my one and only.",
@@ -53,13 +63,13 @@ export const quiz: QuizQuestion[] = [
     question: 'Who fell first?',
     options: ['Me, obviously', 'You, obviously', 'We tied', "Neither, we're normal"],
     correctIndex: 0,
-    funFact: 'Edit this one — put the real (embarrassing) answer here.',
+    funFact: 'Fell first, fell hardest, zero regrets.',
   },
   {
     question: 'Most likely to text "morning?" first',
     options: ['Me', 'You', 'Both, simultaneously', 'We just show up'],
     correctIndex: 2,
-    funFact: 'Edit this one too — this is your quiz, make it yours.',
+    funFact: "Same minute, every time. Either telepathy or we're both terrible at waiting.",
   },
    {
     question: 'Who always starts an argument first? Haha',

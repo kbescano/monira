@@ -3,33 +3,12 @@ import { getCurrentUser, isGuestSession } from '@/lib/session'
 import { getViewOnceGateStatus } from '@/lib/viewOnceGate'
 import MemoriesGallery, { type MemoryItem } from '../components/MemoriesGallery'
 import ProposalReplay from '../components/ProposalReplay'
-import type { ProposalContent } from '../components/ProposalSequence'
 import UploadMemory from '../components/UploadMemory'
 import ViewOnceGateNotice from '../components/ViewOnceGateNotice'
 import { memoriesPage } from '../content'
+import { getProposalContent } from '../lib/proposal'
 
 export const dynamic = 'force-dynamic'
-
-const EMPTY_PROPOSAL: ProposalContent = {
-  personalVideoUrl: null,
-}
-
-async function getProposalContent(): Promise<ProposalContent> {
-  try {
-    const payload = await getPayloadClient()
-    const proposal = await payload.findGlobal({ slug: 'proposal', depth: 1 })
-
-    const personalVideo = proposal.personalVideo as { url?: string | null } | number | null
-    const personalVideoUrl = (personalVideo && typeof personalVideo === 'object' && personalVideo.url) || null
-
-    return {
-      personalVideoUrl,
-    }
-  } catch (error) {
-    console.error('Failed to load proposal content from Payload:', error)
-    return EMPTY_PROPOSAL
-  }
-}
 
 async function getMemories(): Promise<{ memories: MemoryItem[]; failed: boolean }> {
   try {

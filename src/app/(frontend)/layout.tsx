@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from 'next'
-import { Dancing_Script, Playfair_Display } from 'next/font/google'
+import { Dancing_Script, Inter, Playfair_Display } from 'next/font/google'
 import Nav from './components/Nav'
 import BottomNav from './components/BottomNav'
 import { getCurrentUser } from '@/lib/session'
@@ -15,6 +15,13 @@ const serif = Playfair_Display({
   subsets: ['latin'],
   variable: '--font-serif',
   weight: ['500', '600', '700'],
+})
+
+// Fallback for the Apple-style display font (see `font-display` in the Tailwind
+// config): devices with San Francisco use that, everyone else gets Inter.
+const inter = Inter({
+  subsets: ['latin'],
+  variable: '--font-inter',
 })
 
 export const metadata: Metadata = {
@@ -33,7 +40,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   const currentUser = await getCurrentUser()
 
   return (
-    <html lang="en" className={`${script.variable} ${serif.variable}`}>
+    <html lang="en" className={`${script.variable} ${serif.variable} ${inter.variable}`}>
       <body className="min-h-screen bg-cream text-plum">
         <Nav currentUser={currentUser} />
         <main className="min-h-screen pb-20 sm:pb-0">{children}</main>

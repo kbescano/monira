@@ -3,7 +3,13 @@
 import { useState } from 'react'
 import ProposalSequence, { type ProposalContent } from './ProposalSequence'
 
-export default function ProposalReplay({ proposal }: { proposal: ProposalContent }) {
+export default function ProposalReplay({
+  proposal,
+  className = 'flex flex-col items-center gap-2 px-4 pb-2 pt-6 text-center sm:px-0',
+}: {
+  proposal: ProposalContent
+  className?: string
+}) {
   const [open, setOpen] = useState(false)
 
   // Nothing worth replaying if the video was never filled in — stay
@@ -12,7 +18,7 @@ export default function ProposalReplay({ proposal }: { proposal: ProposalContent
 
   return (
     <>
-      <div className="flex flex-col items-center gap-2 px-4 pb-2 pt-6 text-center sm:px-0">
+      <div className={className}>
         <button
           onClick={() => setOpen(true)}
           className="tap-shrink flex items-center gap-2 rounded-full bg-berry px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-berry/30 transition hover:bg-plum sm:text-base"

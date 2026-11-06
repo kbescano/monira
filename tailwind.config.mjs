@@ -10,6 +10,14 @@ const config = {
       fontFamily: {
         script: ['var(--font-script)', 'cursive'],
         serif: ['var(--font-serif)', 'serif'],
+        display: [
+          '-apple-system',
+          'BlinkMacSystemFont',
+          '"SF Pro Display"',
+          'var(--font-inter)',
+          'system-ui',
+          'sans-serif',
+        ],
       },
       colors: {
         blush: '#ffe3ec',
@@ -17,13 +25,22 @@ const config = {
         berry: '#c9184a',
         plum: '#590d22',
         cream: '#fff8f0',
+        lilac: '#efe4f7',
       },
       keyframes: {
-        float: {
-          '0%': { transform: 'translateY(0) rotate(0deg)', opacity: '0' },
-          '10%': { opacity: '1' },
-          '90%': { opacity: '1' },
-          '100%': { transform: 'translateY(-110vh) rotate(20deg)', opacity: '0' },
+        petalFall: {
+          '0%': { transform: 'translate3d(0, -10vh, 0)', opacity: '0' },
+          '8%': { opacity: '1' },
+          '92%': { opacity: '1' },
+          '100%': { transform: 'translate3d(0, 110vh, 0)', opacity: '0' },
+        },
+        petalSway: {
+          '0%, 100%': { transform: 'translateX(-26px) rotate(-30deg)' },
+          '50%': { transform: 'translateX(26px) rotate(40deg)' },
+        },
+        equalizer: {
+          '0%, 100%': { transform: 'scaleY(0.3)' },
+          '50%': { transform: 'scaleY(1)' },
         },
         pulseHeart: {
           '0%, 100%': { transform: 'scale(1)' },
@@ -31,7 +48,9 @@ const config = {
         },
       },
       animation: {
-        float: 'float linear forwards',
+        petalFall: 'petalFall linear infinite',
+        petalSway: 'petalSway ease-in-out infinite',
+        equalizer: 'equalizer 0.9s ease-in-out infinite',
         pulseHeart: 'pulseHeart 1.4s ease-in-out infinite',
       },
     },

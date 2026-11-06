@@ -20,12 +20,16 @@ export default function TogetherCounter({
   since = togetherSince,
   title = 'Time you’ve put up with me:',
   footnote = '(and counting, hopefully forever)',
+  variant = 'lg',
 }: {
   since?: string
   title?: string
   footnote?: string
+  /** `sm` is the compact version for secondary counters — drops the seconds. */
+  variant?: 'lg' | 'sm'
 }) {
   const [elapsed, setElapsed] = useState<ReturnType<typeof getElapsed> | null>(null)
+  const small = variant === 'sm'
 
   useEffect(() => {
     setElapsed(getElapsed(since))
@@ -39,28 +43,38 @@ export default function TogetherCounter({
     [elapsed.days, 'days'],
     [elapsed.hours, 'hrs'],
     [elapsed.minutes, 'min'],
-    [elapsed.seconds, 'sec'],
+    ...(small ? [] : ([[elapsed.seconds, 'sec']] as [number, string][])),
   ]
 
   return (
     <div className="flex flex-col items-center gap-2 text-center">
-      <p className="text-sm text-berry/70">{title}</p>
-      <div className="flex gap-3 sm:gap-4">
+      <p className={small ? 'text-xs text-berry/70 sm:text-sm' : 'text-sm text-berry/70'}>
+        {title}
+      </p>
+      <div className={small ? 'flex gap-1.5 sm:gap-2' : 'flex gap-3 sm:gap-4'}>
         {units.map(([value, label]) => (
           <div
             key={label}
-            className="flex min-w-[3.25rem] flex-col items-center rounded-2xl bg-white/70 px-3 py-2 shadow-sm sm:min-w-[4rem]"
+            className={
+              small
+                ? 'flex min-w-[2.75rem] flex-col items-center rounded-xl bg-white/70 px-2 py-1.5 shadow-sm sm:min-w-[3.25rem]'
+                : 'flex min-w-[3.25rem] flex-col items-center rounded-2xl bg-white/70 px-3 py-2 shadow-sm sm:min-w-[4rem]'
+            }
           >
-            <span className="font-serif text-xl font-semibold text-berry sm:text-2xl">
+            <span
+              className={`font-serif font-semibold text-berry ${small ? 'text-lg' : 'text-xl sm:text-2xl'}`}
+            >
               {value}
             </span>
-            <span className="text-[10px] uppercase tracking-wide text-berry/60 sm:text-xs">
+            <span
+              className={`uppercase tracking-wide text-berry/60 ${small ? 'text-[9px] sm:text-[10px]' : 'text-[10px] sm:text-xs'}`}
+            >
               {label}
             </span>
           </div>
         ))}
       </div>
-      <p className="text-xs text-berry/50">{footnote}</p>
+      <p className={small ? 'text-[11px] text-berry/50' : 'text-xs text-berry/50'}>{footnote}</p>
     </div>
   )
 }
