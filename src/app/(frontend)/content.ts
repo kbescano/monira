@@ -25,6 +25,144 @@ export const reasonsMusic = { videoId: '-BjZmE2gtdo' }
 /** The closing line at the very bottom of the Home page. */
 export const signOff = 'Always yours.'
 
+/**
+ * The "Do you want us back?" question Nira meets after logging in, and the terms
+ * behind it. `short` is the one-liner shown in the summary on the front page
+ * once she's said yes. Edit any of this freely — it's all just text.
+ */
+export const reunion = {
+  eyebrow: 'A question, before anything else',
+  title: 'Do you want us back?',
+  lead: 'Do you want us to go back together — even though we’re not really broken up?',
+  leadAside: 'Like… do you want the old us back?',
+  reassurance: 'Take your time. There’s no wrong answer — only an honest one.',
+  termsIntro: 'Here’s what I’ll give you — and what we both promise.',
+  signature: '— Ken',
+  benefits: [
+    { icon: '📱', title: 'A new phone', description: 'Yours, on me.', short: 'New phone' },
+    {
+      icon: '📸',
+      title: 'New memories',
+      description: 'More of them — made together, on purpose.',
+      short: 'New memories',
+    },
+    {
+      icon: '💐',
+      title: 'Monthly gifts or flowers',
+      description: 'Every month, no occasion needed.',
+      short: 'Monthly gifts or flowers',
+    },
+    {
+      icon: '🍽️',
+      title: 'A proper date, every month',
+      description: 'Once you’re back here — we’re long-distance for now. Dressed up, phones away.',
+      short: 'Monthly date, once you’re back',
+    },
+    {
+      icon: '✈️',
+      title: 'A getaway, just us',
+      description: 'Somewhere new, planned by me.',
+      short: 'A getaway',
+    },
+    {
+      icon: '🎂',
+      title: 'Special days, done right',
+      description: 'Birthdays and anniversaries — never missed.',
+      short: 'Special days',
+    },
+    {
+      icon: '🍜',
+      title: 'Comfort on the hard days',
+      description: 'Your favorite food, delivered.',
+      short: 'Comfort on hard days',
+    },
+    {
+      icon: '💌',
+      title: 'Little surprises',
+      description: 'Notes, messages, small things — just because.',
+      short: 'Little surprises',
+    },
+  ],
+  conditions: [
+    {
+      title: 'Intimacy, with clarity',
+      description:
+        'Once in a blue moon — and that’s understood. No pressure, no guilt, no keeping score.',
+      short: 'Intimacy: once in a blue moon',
+    },
+    {
+      title: 'Timely updates',
+      description: 'Updates come on time, without having to be asked.',
+      short: 'Timely updates, without asking',
+    },
+    {
+      title: 'Everyday call',
+      description: 'A call every day — even a short one.',
+      short: 'A call, every day',
+    },
+    {
+      title: 'Everyday voice message or video call',
+      description: 'A voice message or a video call, every day. I want to hear you and see you.',
+      short: 'A voice message or video call, daily',
+    },
+    {
+      title: 'Reassurance',
+      description: 'Given freely — especially on the hard days.',
+      short: 'Reassurance, freely given',
+    },
+    {
+      title: 'Love without being asked',
+      description: 'Shown, never requested.',
+      short: 'Love, without being asked',
+    },
+    {
+      title: 'Our wedding & our future',
+      description: 'We plan them together — for real.',
+      short: 'Planning our wedding & future',
+    },
+    {
+      title: 'No more blame',
+      description: 'We face problems together, not point fingers.',
+      short: 'No more blame',
+    },
+    {
+      title: 'Feelings, freely',
+      description: 'We say what we feel, openly and honestly.',
+      short: 'Open, honest communication',
+    },
+    {
+      title: 'Always mindful of each other',
+      description: 'In whatever we do, we remember how our partner will feel.',
+      short: 'Mindful of each other’s feelings',
+    },
+    {
+      title: 'No more social drama',
+      description: 'Nothing — online or with other people — that hurts or embarrasses the other.',
+      short: 'No more social drama',
+    },
+    {
+      title: 'Talk it out the same day',
+      description: 'No silent treatment, no going cold.',
+      short: 'No silent treatment',
+    },
+    {
+      title: 'Honest, even when it’s hard',
+      description: 'No hiding, no half-truths.',
+      short: 'Honesty, always',
+    },
+    {
+      title: 'Sorry, and meant',
+      description: 'Apologize quickly, forgive fully — old fights stay in the past.',
+      short: 'Quick sorrys, full forgiveness',
+    },
+    {
+      title: 'Each other first',
+      description: 'Problems get worked out between us before anyone else hears of them.',
+      short: 'Each other first',
+    },
+  ],
+}
+
 export const hero = {
   eyebrow: "A tiny app. For my one and only.",
   title: `For ${herName}, obviously.`,

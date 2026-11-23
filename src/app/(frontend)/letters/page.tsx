@@ -1,4 +1,5 @@
 import { getPayloadClient } from '@/lib/payload'
+import { requireReunionAnswered } from '@/lib/reunion'
 import { getCurrentUser, isGuestSession } from '@/lib/session'
 import { getViewOnceGateStatus } from '@/lib/viewOnceGate'
 import { otherPerson } from '@/lib/dailyPassword'
@@ -93,6 +94,7 @@ export default async function LettersPage() {
   }
 
   const currentUser = await getCurrentUser()
+  await requireReunionAnswered(currentUser)
   const gate = await getViewOnceGateStatus(currentUser)
 
   if (gate.locked) {

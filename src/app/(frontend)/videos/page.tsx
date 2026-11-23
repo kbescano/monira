@@ -1,5 +1,6 @@
 import type { Where } from 'payload'
 import { getPayloadClient } from '@/lib/payload'
+import { requireReunionAnswered } from '@/lib/reunion'
 import { getCurrentUser, isGuestSession } from '@/lib/session'
 import type { Person } from '@/lib/dailyPassword'
 import UploadVideo from '../components/UploadVideo'
@@ -69,6 +70,7 @@ export default async function VideosPage() {
   }
 
   const currentUser = await getCurrentUser()
+  await requireReunionAnswered(currentUser)
   const { videos, failed } = await getPendingVideos(currentUser)
 
   return (

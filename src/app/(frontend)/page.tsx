@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import { getPayloadClient } from '@/lib/payload'
 import { getCurrentUser, isGuestSession } from '@/lib/session'
+import { countReunionReplies, getReunionState, isReunionPending } from '@/lib/reunion'
 import { getViewOnceGateStatus } from '@/lib/viewOnceGate'
 import GuestPrivateOverlay from './components/GuestPrivateOverlay'
 import HeroPhotos, { type HeroPhoto } from './components/HeroPhotos'
@@ -8,6 +9,8 @@ import Petals from './components/Petals'
 import ProposalReplay from './components/ProposalReplay'
 import QuizGame from './components/QuizGame'
 import ReasonGenerator from './components/ReasonGenerator'
+import ReunionGate from './components/ReunionGate'
+import ReunionPromise from './components/ReunionPromise'
 import Reveal from './components/Reveal'
 import RunawayKiss from './components/RunawayKiss'
 import SectionHeading, { Ornament } from './components/SectionHeading'
@@ -103,19 +106,28 @@ function reasonOfTheDay(length: number): number | null {
 
 export default async function HomePage() {
   const currentUser = await getCurrentUser()
-  const [settings, gate, isGuest] = await Promise.all([
+
+  // Until Nira answers "Do you want us back?", that's all she gets — nothing
+  // else on the page is even rendered for her.
+  if (await isReunionPending(currentUser)) return <ReunionGate />
+
+  const [settings, gate, isGuest, reunion] = await Promise.all([
     getSettings(),
     getViewOnceGateStatus(currentUser),
     isGuestSession(),
+    getReunionState(),
   ])
 
   // The guest sees this page blurred and inert, so there's no reason to send
   // them any of the private content in the first place.
   const showPrivate = !isGuest
-  const [reasons, photos, proposal] = await Promise.all([
+  const waitingOnHer =
+    showPrivate && currentUser === 'Ken' && !reunion.failed && !reunion.acceptedAt
+  const [reasons, photos, proposal, replies] = await Promise.all([
     showPrivate && settings.showReasons && !gate.locked ? getReasons() : [],
     showPrivate && !gate.locked ? getHeroPhotos(settings) : [],
     showPrivate ? getProposalContent() : { personalVideoUrl: null },
+    waitingOnHer ? countReunionReplies() : 0,
   ])
 
   return (
@@ -158,6 +170,31 @@ export default async function HomePage() {
               />
             </div>
           </Reveal>
+
+          {/* Ken only, while she hasn't said yes: a way back to anything she's written */}
+          {waitingOnHer && (
+            <Reveal className="w-full px-4 sm:px-0">
+              <Link
+                href="/pact"
+                className="mx-auto flex max-w-md items-center justify-center gap-2 rounded-2xl border border-rose/25 bg-white/70 px-4 py-3 text-sm text-plum/75 shadow-md shadow-berry/10 transition hover:bg-white"
+              >
+                💌{' '}
+                {replies > 0
+                  ? `Nira left you ${replies === 1 ? 'a message' : `${replies} messages`} — read ${replies === 1 ? 'it' : 'them'} →`
+                  : 'Waiting for Nira’s answer to “Do you want us back?”'}
+              </Link>
+            </Reveal>
+          )}
+
+          {/* Our promise — the terms she agreed to, once she's said yes */}
+          {showPrivate && reunion.acceptedAt && (
+            <Reveal className="flex w-full justify-center px-4 sm:px-0">
+              <ReunionPromise
+                acceptedAt={reunion.acceptedAt}
+                showAnswersLink={currentUser === 'Ken'}
+              />
+            </Reveal>
+          )}
 
           {/* Reasons — an endless fall through a heart-shaped tunnel (see
               ReasonGenerator). Locked ahead of all that if the View Once gate

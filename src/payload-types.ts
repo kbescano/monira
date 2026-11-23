@@ -76,6 +76,7 @@ export interface Config {
     'voice-notes': VoiceNote;
     'proposal-videos': ProposalVideo;
     notifications: Notification;
+    'reunion-answers': ReunionAnswer;
     'payload-kv': PayloadKv;
     'payload-locked-documents': PayloadLockedDocument;
     'payload-preferences': PayloadPreference;
@@ -92,6 +93,7 @@ export interface Config {
     'voice-notes': VoiceNotesSelect<false> | VoiceNotesSelect<true>;
     'proposal-videos': ProposalVideosSelect<false> | ProposalVideosSelect<true>;
     notifications: NotificationsSelect<false> | NotificationsSelect<true>;
+    'reunion-answers': ReunionAnswersSelect<false> | ReunionAnswersSelect<true>;
     'payload-kv': PayloadKvSelect<false> | PayloadKvSelect<true>;
     'payload-locked-documents': PayloadLockedDocumentsSelect<false> | PayloadLockedDocumentsSelect<true>;
     'payload-preferences': PayloadPreferencesSelect<false> | PayloadPreferencesSelect<true>;
@@ -386,6 +388,22 @@ export interface Notification {
   createdAt: string;
 }
 /**
+ * Nira’s answers to “Do you want us back?”. A “yes” unlocks the site for her for good — delete it to ask her again. “Not yet” answers (and anything she wrote) are kept here, and also under /pact on the site.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "reunion-answers".
+ */
+export interface ReunionAnswer {
+  id: number;
+  kind: 'yes' | 'not-yet';
+  /**
+   * What she wrote — why she’s not ready, or conditions she’d like to add.
+   */
+  message?: string | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "payload-kv".
  */
@@ -444,6 +462,10 @@ export interface PayloadLockedDocument {
     | ({
         relationTo: 'notifications';
         value: number | Notification;
+      } | null)
+    | ({
+        relationTo: 'reunion-answers';
+        value: number | ReunionAnswer;
       } | null);
   globalSlug?: string | null;
   user: {
@@ -653,6 +675,16 @@ export interface NotificationsSelect<T extends boolean = true> {
   forUser?: T;
   read?: T;
   link?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "reunion-answers_select".
+ */
+export interface ReunionAnswersSelect<T extends boolean = true> {
+  kind?: T;
+  message?: T;
   updatedAt?: T;
   createdAt?: T;
 }

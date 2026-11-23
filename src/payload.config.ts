@@ -15,6 +15,7 @@ import { Videos } from './collections/Videos'
 import { VoiceNotes } from './collections/VoiceNotes'
 import { ProposalVideos } from './collections/ProposalVideos'
 import { Notifications } from './collections/Notifications'
+import { ReunionAnswers } from './collections/ReunionAnswers'
 import { Settings } from './globals/Settings'
 import { Proposal } from './globals/Proposal'
 
@@ -39,6 +40,7 @@ export default buildConfig({
     VoiceNotes,
     ProposalVideos,
     Notifications,
+    ReunionAnswers,
   ],
   globals: [Settings, Proposal],
   editor: lexicalEditor({}),

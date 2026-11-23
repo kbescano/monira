@@ -1,4 +1,5 @@
 import { getPayloadClient } from '@/lib/payload'
+import { requireReunionAnswered } from '@/lib/reunion'
 import { getCurrentUser, isGuestSession } from '@/lib/session'
 import type { Person } from '@/lib/dailyPassword'
 import GuestRestrictedNotice from '../../components/GuestRestrictedNotice'
@@ -45,6 +46,8 @@ export default async function WatchVideoPage({
 
   const { id } = await params
   const currentUser = await getCurrentUser()
+  // Checked before anything is looked up, so a View Once she opens early isn't used up.
+  await requireReunionAnswered(currentUser)
   const { exists, uploadedBy, kind } = await videoSender(id, currentUser)
 
   return (

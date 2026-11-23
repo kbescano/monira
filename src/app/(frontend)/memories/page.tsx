@@ -1,4 +1,5 @@
 import { getPayloadClient } from '@/lib/payload'
+import { requireReunionAnswered } from '@/lib/reunion'
 import { getCurrentUser, isGuestSession } from '@/lib/session'
 import { getViewOnceGateStatus } from '@/lib/viewOnceGate'
 import MemoriesGallery, { type MemoryItem } from '../components/MemoriesGallery'
@@ -69,6 +70,7 @@ async function getMemories(): Promise<{ memories: MemoryItem[]; failed: boolean 
 
 export default async function MemoriesPage() {
   const currentUser = await getCurrentUser()
+  await requireReunionAnswered(currentUser)
   const gate = await getViewOnceGateStatus(currentUser)
 
   if (gate.locked) {

@@ -1,4 +1,5 @@
 import { getPayloadClient } from '@/lib/payload'
+import { requireReunionAnswered } from '@/lib/reunion'
 import { getCurrentUser, isGuestSession } from '@/lib/session'
 import { otherPerson } from '@/lib/dailyPassword'
 import GuestRestrictedNotice from '../../components/GuestRestrictedNotice'
@@ -56,6 +57,8 @@ export default async function LetterThreadPage({ params }: { params: Promise<{ i
       </div>
     )
   }
+
+  await requireReunionAnswered(await getCurrentUser())
 
   const { id } = await params
   const [{ root, replies, to }, currentUser] = await Promise.all([getThread(id), getCurrentUser()])
