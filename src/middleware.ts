@@ -24,6 +24,10 @@ export function middleware(req: NextRequest) {
 
 export const config = {
   // Everything except: Payload's admin panel + its API (has its own login),
-  // Next's static assets, and the login page/action themselves.
-  matcher: ['/((?!admin|api|_next/static|_next/image|favicon.ico|login).*)'],
+  // Next's static assets, the login page/action themselves, and the favicon /
+  // link-preview images (link-preview crawlers and browser tabs fetch those
+  // without being logged in).
+  matcher: [
+    '/((?!admin|api|_next/static|_next/image|favicon.ico|icon.png|apple-touch-icon.png|og.jpg|login).*)',
+  ],
 }

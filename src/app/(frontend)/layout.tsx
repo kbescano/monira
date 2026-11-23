@@ -1,4 +1,5 @@
 import type { Metadata, Viewport } from 'next'
+import { headers } from 'next/headers'
 import { Dancing_Script, Inter, Playfair_Display } from 'next/font/google'
 import Nav from './components/Nav'
 import BottomNav from './components/BottomNav'
@@ -24,9 +25,42 @@ const inter = Inter({
   variable: '--font-inter',
 })
 
-export const metadata: Metadata = {
-  title: 'Love Nira always',
-  description: 'A tiny corner of the internet, just for us.',
+const SITE_TITLE = 'Love Nira always'
+const SITE_DESCRIPTION = 'A tiny corner of the internet, just for us.'
+
+// Link previews (WhatsApp, Messenger, iMessage…) need absolute image URLs, so
+// the base address is taken from the request itself — that way it's right on
+// whatever domain the site is served from, with nothing to configure.
+export async function generateMetadata(): Promise<Metadata> {
+  const h = await headers()
+  const host = h.get('x-forwarded-host') ?? h.get('host')
+  const proto = h.get('x-forwarded-proto') ?? (host?.startsWith('localhost') ? 'http' : 'https')
+
+  return {
+    metadataBase: host ? new URL(`${proto}://${host}`) : undefined,
+    title: SITE_TITLE,
+    description: SITE_DESCRIPTION,
+    openGraph: {
+      title: SITE_TITLE,
+      description: SITE_DESCRIPTION,
+      siteName: SITE_TITLE,
+      type: 'website',
+      images: [{ url: '/og.jpg', width: 1200, height: 630, alt: SITE_TITLE }],
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title: SITE_TITLE,
+      description: SITE_DESCRIPTION,
+      images: ['/og.jpg'],
+    },
+    icons: {
+      icon: [
+        { url: '/favicon.ico', sizes: 'any' },
+        { url: '/icon.png', type: 'image/png', sizes: '192x192' },
+      ],
+      apple: [{ url: '/apple-touch-icon.png', sizes: '180x180' }],
+    },
+  }
 }
 
 // viewportFit: 'cover' lets the page draw under the iPhone notch/home-indicator
